@@ -39,6 +39,8 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 class GremlinServerHandler extends SimpleChannelInboundHandler<Object> {
     private static final Logger logger = LoggerFactory.getLogger(GremlinServerHandler.class);
 
+    private static final String WEBSOCKET_PATH = "/gremlin";
+
     private WebSocketServerHandshaker handshaker;
     private StaticFileHandler staticFileHandler;
     private final Settings settings;
@@ -79,7 +81,7 @@ class GremlinServerHandler extends SimpleChannelInboundHandler<Object> {
 
         final String uri = req.getUri();
 
-        if (uri.startsWith(settings.webSocketRoute)) {
+        if (uri.startsWith(WEBSOCKET_PATH)) {
             // Web socket handshake
             WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
                     getWebSocketLocation(req), null, false);
@@ -104,21 +106,23 @@ class GremlinServerHandler extends SimpleChannelInboundHandler<Object> {
         // Check for closing frame
         if (frame instanceof CloseWebSocketFrame) {
             handshaker.close(ctx.channel(), (CloseWebSocketFrame) frame.retain());
-            return;
         }
-        if (frame instanceof PingWebSocketFrame) {
+        else if (frame instanceof PingWebSocketFrame) {
             ctx.channel().write(new PongWebSocketFrame(frame.content().retain()));
-            return;
         }
-        if (!(frame instanceof TextWebSocketFrame)) {
+        else if (frame instanceof PongWebSocketFrame) {
+            // nothing to do
+        }
+        else if (frame instanceof TextWebSocketFrame) {
+            // todo: support both text and binary where binary allows for versioning of the messages.
+            final String request = ((TextWebSocketFrame) frame).text();
+            final RequestMessage requestMessage = RequestMessage.Serializer.parse(request).orElse(RequestMessage.INVALID);
+            OpProcessor.instance().select(requestMessage).accept(new Context(requestMessage, ctx, settings, graphs));
+        }
+        else {
             throw new UnsupportedOperationException(String.format("%s frame types not supported", frame.getClass()
                     .getName()));
         }
-
-        // todo: support both text and binary where binary allows for versioning of the messages.
-        final String request = ((TextWebSocketFrame) frame).text();
-        final RequestMessage requestMessage = RequestMessage.Serializer.parse(request).orElse(RequestMessage.INVALID);
-        OpProcessor.instance().select(requestMessage).accept(new Context(requestMessage, ctx, settings, graphs));
     }
 
     private static void sendHttpResponse(
@@ -146,6 +150,6 @@ class GremlinServerHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     private String getWebSocketLocation(FullHttpRequest req) {
-        return "ws://" + req.headers().get(HOST) + settings.webSocketRoute;
+        return "ws://" + req.headers().get(HOST) + WEBSOCKET_PATH;
     }
 }
