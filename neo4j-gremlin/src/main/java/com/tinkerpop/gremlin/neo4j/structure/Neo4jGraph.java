@@ -1,49 +1,48 @@
 package com.tinkerpop.gremlin.neo4j.structure;
 
 import com.tinkerpop.gremlin.neo4j.process.step.map.Neo4jGraphStep;
+import com.tinkerpop.gremlin.neo4j.strategy.Neo4jGraphStepTraversalStrategy;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.Transaction;
-import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.index.AutoIndexer;
+import org.neo4j.graphdb.index.RelationshipAutoIndexer;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 
 import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
+ * @author Pieter Martin
  */
 public class Neo4jGraph implements Graph {
     private GraphDatabaseService rawGraph;
 
     // todo: configuration for auto-list conversion.
-    private static final String CONFIG_DIRECTORY = "gremlin.neo4j.directory";
-    private static final String CONFIG_HA = "gremlin.neo4j.ha";
-    private static final String CONFIG_CONF = "gremlin.neo4j.conf";
+    public static final String CONFIG_DIRECTORY = "gremlin.neo4j.directory";
+    public static final String CONFIG_HA = "gremlin.neo4j.ha";
+    public static final String CONFIG_CONF = "gremlin.neo4j.conf";
 
     private final Neo4jTransaction neo4jTransaction = new Neo4jTransaction();
 
@@ -65,7 +64,10 @@ public class Neo4jGraph implements Graph {
             // if HA is enabled then use the correct factory to instantiate the GraphDatabaseService
             this.rawGraph = ha ?
                     new HighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder(directory).setConfig(neo4jSpecificConfig).newGraphDatabase() :
-                    new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).setConfig(neo4jSpecificConfig).newGraphDatabase();
+                    new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).
+                            setConfig(GraphDatabaseSettings.node_auto_indexing, "true").
+                            setConfig(GraphDatabaseSettings.relationship_auto_indexing, "true").
+                            setConfig(neo4jSpecificConfig).newGraphDatabase();
 
             transactionManager = ((GraphDatabaseAPI) rawGraph).getDependencyResolver().resolveDependency(TransactionManager.class);
             cypher = new ExecutionEngine(rawGraph);
@@ -127,6 +129,7 @@ public class Neo4jGraph implements Graph {
     public GraphTraversal<Vertex, Vertex> V() {
         this.tx().readWrite();
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Vertex>();
+        traversal.strategies().register(new Neo4jGraphStepTraversalStrategy());
         traversal.addStep(new Neo4jGraphStep(traversal, Vertex.class, this));
         return traversal;
     }
@@ -135,6 +138,7 @@ public class Neo4jGraph implements Graph {
     public GraphTraversal<Edge, Edge> E() {
         this.tx().readWrite();
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Edge>();
+        traversal.strategies().register(new Neo4jGraphStepTraversalStrategy());
         traversal.addStep(new Neo4jGraphStep(traversal, Edge.class, this));
         return traversal;
     }
@@ -227,6 +231,8 @@ public class Neo4jGraph implements Graph {
             longId = Double.valueOf(id.toString()).longValue();
         return longId;
     }
+
+
 
     class Neo4jTransaction implements Transaction {
         private Consumer<Transaction> readWriteConsumer;
@@ -557,4 +563,118 @@ public class Neo4jGraph implements Graph {
             }
         }
     }
+
+    //neo4j indexing
+
+    /**
+     * Creates a labeled index on the given propertyKey
+     *
+     * @param label       The label for nodes to be indexed
+     * @param propertyKey the property key to include in this index to be created.
+     * @return the created {@link IndexDefinition index}.
+     * @throws ConstraintViolationException if creating this index would violate one or more constraints.
+     */
+    public IndexDefinition createLabeledIndex(String label, String propertyKey) throws ConstraintViolationException {
+        this.tx().readWrite();
+        Schema schema = getRawGraph().schema();
+        return schema.indexFor(DynamicLabel.label(label)).on(propertyKey).create();
+    }
+
+    /**
+     * Drop the index for a label.
+     *
+     * @param label The label for nodes to be indexed
+     */
+    public void dropLabeledIndex(String label) {
+        this.tx().readWrite();
+        Label dynamicLabel = DynamicLabel.label(label);
+        for (IndexDefinition indexDefinition : this.getRawGraph().schema().getIndexes(dynamicLabel)) {
+            indexDefinition.drop();
+        }
+    }
+
+    /**
+     * Start auto indexing a property.
+     *
+     * @param elementClass Index is on a Edge or Vertex
+     * @param key          The property name to start auto indexing.
+     */
+    public void createLegacyIndex(Class<? extends Element> elementClass, String key) {
+        this.tx().readWrite();
+        if (Vertex.class.isAssignableFrom(elementClass)) {
+            AutoIndexer<Node> nodeAutoIndexer = this.getRawGraph().index().getNodeAutoIndexer();
+            if (!nodeAutoIndexer.isEnabled()) {
+                throw new IllegalStateException("Automatic indexing must be enabled at startup for legacy indexing to work on vertices!");
+            }
+            nodeAutoIndexer.startAutoIndexingProperty(key);
+        } else if (Edge.class.isAssignableFrom(elementClass)) {
+            RelationshipAutoIndexer relationshipAutoIndexer = this.getRawGraph().index().getRelationshipAutoIndexer();
+            if (!relationshipAutoIndexer.isEnabled()) {
+                throw new IllegalStateException("Automatic indexing must be enabled at startup for legacy indexing to work on edges!");
+            }
+            relationshipAutoIndexer.startAutoIndexingProperty(key);
+        } else {
+            throw new IllegalArgumentException("Class is not indexable: " + elementClass);
+        }
+    }
+
+    /**
+     * Stop auto indexing a property.
+     *
+     * @param elementClass Index is on a Edge or Vertex
+     * @param key          The property key to start auto indexing.
+     */
+    public void dropLegacyIndex(Class<? extends Element> elementClass, String key) {
+        this.tx().readWrite();
+        if (Vertex.class.isAssignableFrom(elementClass)) {
+            AutoIndexer<Node> nodeAutoIndexer = this.getRawGraph().index().getNodeAutoIndexer();
+            if (!nodeAutoIndexer.isEnabled()) {
+                throw new IllegalStateException("Automatic indexing must be enabled at startup for legacy indexing to work on vertices!");
+            }
+            nodeAutoIndexer.stopAutoIndexingProperty(key);
+        } else if (Edge.class.isAssignableFrom(elementClass)) {
+            RelationshipAutoIndexer relationshipAutoIndexer = this.getRawGraph().index().getRelationshipAutoIndexer();
+            if (!relationshipAutoIndexer.isEnabled()) {
+                throw new IllegalStateException("Automatic indexing must be enabled at startup for legacy indexing to work on edges!");
+            }
+            relationshipAutoIndexer.stopAutoIndexingProperty(key);
+        } else {
+            throw new IllegalArgumentException("Class is not indexable: " + elementClass);
+        }
+    }
+
+    /**
+     * Imposes a uniqueness constraint for the given property, such that
+     * there can be at most one node, having the given label, for any set value of that property key.
+     *
+     * @param label       The label this constraint is for.
+     * @param propertyKey The property key to start auto indexing.
+     * @return Definition of the constraint.
+     */
+    public ConstraintDefinition createUniqueConstraint(String label, String propertyKey) {
+        this.tx().readWrite();
+        Schema schema = getRawGraph().schema();
+        return schema.constraintFor(DynamicLabel.label(label)).assertPropertyIsUnique(propertyKey).create();
+    }
+
+    public Iterable<IndexDefinition> getLabeledIndexes() {
+        this.tx().readWrite();
+        Schema schema = getRawGraph().schema();
+        return schema.getIndexes();
+    }
+
+    public <E extends Element> Set<String> getIndexedKeys(final Class<E> elementClass) {
+        this.tx().readWrite();
+        if (Vertex.class.isAssignableFrom(elementClass)) {
+            final AutoIndexer indexer = this.getRawGraph().index().getNodeAutoIndexer();
+            return indexer.getAutoIndexedProperties();
+        } else if (Edge.class.isAssignableFrom(elementClass)) {
+            final AutoIndexer indexer = this.getRawGraph().index().getRelationshipAutoIndexer();
+            return indexer.getAutoIndexedProperties();
+        } else {
+            throw new IllegalArgumentException("Class is not indexable: " + elementClass);
+        }
+    }
+
+
 }
