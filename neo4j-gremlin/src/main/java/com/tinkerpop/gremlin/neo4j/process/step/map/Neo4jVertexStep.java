@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
+ * @author Pieter Martin
  */
 public class Neo4jVertexStep<E extends Element> extends VertexStep<E> {
 
@@ -40,8 +41,7 @@ public class Neo4jVertexStep<E extends Element> extends VertexStep<E> {
             else if (direction.equals(com.tinkerpop.gremlin.structure.Direction.IN))
                 this.setFunction(traverser -> (Iterator) StreamFactory.stream(new Neo4jVertexEdgeIterable<>(g, ((Neo4jVertex) traverser.get()).getRawVertex(), Direction.INCOMING, labels)).limit(this.branchFactor).iterator());
             else
-                this.setFunction(traverser -> (Iterator) Stream.concat(StreamFactory.stream(new Neo4jVertexEdgeIterable<>(g, ((Neo4jVertex) traverser.get()).getRawVertex(), Direction.OUTGOING, labels)),
-                        StreamFactory.stream(new Neo4jVertexEdgeIterable<>(g, ((Neo4jVertex) traverser.get()).getRawVertex(), Direction.INCOMING, labels))).limit(this.branchFactor).iterator());
+                this.setFunction(traverser -> (Iterator) StreamFactory.stream(new Neo4jVertexEdgeIterable<>(g, ((Neo4jVertex) traverser.get()).getRawVertex(), Direction.BOTH, labels)).limit(this.branchFactor).iterator());
         }
     }
 
@@ -63,6 +63,7 @@ public class Neo4jVertexStep<E extends Element> extends VertexStep<E> {
         }
 
         public Iterator<Neo4jVertex> iterator() {
+            graph.tx().readWrite();
             final Iterator<Relationship> itty;
             if (labels.length > 0)
                 itty = node.getRelationships(direction, labels).iterator();
@@ -103,6 +104,7 @@ public class Neo4jVertexStep<E extends Element> extends VertexStep<E> {
         }
 
         public Iterator<Neo4jEdge> iterator() {
+            graph.tx().readWrite();
             final Iterator<Relationship> itty;
             if (labels.length > 0)
                 itty = node.getRelationships(direction, labels).iterator();
