@@ -1,0 +1,22 @@
+rootProject.name = 'tinkerpop'
+include ':gremlin-core'
+include ':gremlin-algorithm'
+include ':gremlin-test'
+include ':tinkergraph-gremlin'
+include ':neo4j-gremlin'
+include ':giraph-gremlin'
+include ':gremlin-groovy'
+include ':gremlin-driver'
+include ':gremlin-console'
+include ':gremlin-server'
+
+project(':gremlin-core').projectDir = "$rootDir/gremlin-core" as File
+project(':gremlin-algorithm').projectDir = "$rootDir/gremlin-algorithm" as File
+project(':gremlin-test').projectDir = "$rootDir/gremlin-test" as File
+project(':tinkergraph-gremlin').projectDir = "$rootDir/tinkergraph-gremlin" as File
+project(':neo4j-gremlin').projectDir = "$rootDir/neo4j-gremlin" as File
+project(':giraph-gremlin').projectDir = "$rootDir/giraph-gremlin" as File
+project(':gremlin-groovy').projectDir = "$rootDir/gremlin-groovy" as File
+project(':gremlin-driver').projectDir = "$rootDir/gremlin-driver" as File
+project(':gremlin-console').projectDir = "$rootDir/gremlin-console" as File
+project(':gremlin-server').projectDir = "$rootDir/gremlin-server" as File

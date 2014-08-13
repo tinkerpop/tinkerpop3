@@ -1,0 +1,34 @@
+allprojects {
+    apply plugin: 'maven'
+
+    group = 'com.tinkerpop'
+    version = '3.0.0-SNAPSHOT'
+}
+
+subprojects {
+    apply plugin: 'java'
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    task packageSources(type: Jar) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+
+    }
+    artifacts.archives packageSources
+    repositories {
+        mavenLocal()
+        jcenter()
+        mavenCentral()
+
+        maven { url "http://nexus.codehaus.org/snapshots/" }
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+        maven { url "http://repo.maven.apache.org/maven2" }
+        maven { url "http://obelix.ics.uci.edu/nexus/content/groups/hyracks-public-releases/" }
+    }
+
+    configurations.all {
+    }
+
+
+}

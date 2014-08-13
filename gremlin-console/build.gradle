@@ -1,0 +1,22 @@
+description = 'Gremlin Console: Gremlin Groovy REPL'
+apply plugin: 'groovy'
+
+sourceSets {
+    main {
+        groovy {
+            srcDir 'src/main/java'
+            srcDir 'src/main/groovy'
+        }
+        java.srcDirs = []
+    }
+}
+
+dependencies {
+    compile project(':gremlin-groovy')
+    compile(group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7') {
+        exclude(module: 'commons-lang')
+    }
+    compile project(':gremlin-driver')
+    compile group: 'org.gperfutils', name: 'gbench', version: '0.4.2-groovy-2.1'
+    compile group: 'org.gperfutils', name: 'gprof', version: '0.3.0-groovy-2.3'
+}

@@ -1,0 +1,5 @@
+description = 'Gremlin Algorithms: Graph Computing Algorithms for TinkerPop3'
+dependencies {
+    compile project(':gremlin-core')
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
