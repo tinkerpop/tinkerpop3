@@ -1,0 +1,6 @@
+
+description = 'TinkerGraph Gremlin: The Reference Implementation of TinkerPop3'
+dependencies {
+  compile project(':gremlin-core')
+  testCompile project(':gremlin-test')
+}

@@ -1,0 +1,39 @@
+description = 'Gremlin Groovy: Gremlin for the Groovy Language'
+
+apply plugin: 'groovy'
+
+sourceSets {
+    main {
+        groovy {
+            srcDir 'src/main/java'
+            srcDir 'src/main/groovy'
+        }
+        java.srcDirs = []
+    }
+    test {
+        groovy {
+            srcDir 'src/test/java'
+            srcDir 'src/test/groovy'
+        }
+        java.srcDirs = []
+    }
+}
+
+
+
+
+
+dependencies {
+    compile project(':gremlin-core')
+    compile project(':gremlin-algorithm')
+    compile project(':tinkergraph-gremlin')
+    compile group: 'org.apache.ivy', name: 'ivy', version: '2.3.0'
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.3.6'
+    compile group: 'jline', name: 'jline', version: '2.11'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.3.1'
+    compile(group: 'org.kohsuke', name: 'groovy-sandbox', version: '1.6') {
+        exclude(module: 'groovy')
+    }
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    testCompile project(':gremlin-test')
+}

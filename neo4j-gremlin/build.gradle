@@ -1,0 +1,23 @@
+description = 'Neo4j Gremlin: An Implementation of TinkerPop3 for the Neo4j Graph Database'
+dependencies {
+    compile project(':gremlin-core')
+    compile project(':gremlin-groovy')
+    compile(group: 'org.neo4j', name: 'neo4j', version: '2.1.2') {
+        exclude(module: 'neo4j-lucene-index')
+        exclude(module: 'neo4j-kernel')
+        exclude(module: 'scala-library')
+        exclude(module: 'opencsv')
+        exclude(module: 'neo4j-graph-matching')
+        exclude(module: 'neo4j-graph-algo')
+    }
+    compile(group: 'org.neo4j', name: 'neo4j-ha', version: '2.1.2') {
+        exclude(module: 'log4j')
+        exclude(module: 'slf4j-api')
+    }
+    compile group: 'org.neo4j', name: 'neo4j-management', version: '2.1.2'
+    compile group: 'org.neo4j', name: 'neo4j-graph-matching', version: '2.1.2'
+    compile group: 'org.neo4j', name: 'neo4j-graph-algo', version: '2.1.2'
+    compile group: 'org.scala-lang', name: 'scala-library', version: '2.10.4'
+    compile group: 'net.sf.opencsv', name: 'opencsv', version: '2.3'
+    testCompile project(':gremlin-test')
+}
