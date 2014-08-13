@@ -67,6 +67,7 @@ cd "$SAVED" >&-
 
 CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 
+if [ -x "/usr/libexec/java_home" ] ; then JAVA_HOME=$(/usr/libexec/java_home -v 1.8) ; fi
 
 # Determine the Java command to use to start the JVM.
 if [ -n "$JAVA_HOME" ] ; then
