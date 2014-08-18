@@ -1,5 +1,6 @@
 *.log
 target/
+build/
 *.iml
 .idea/
 *.iws

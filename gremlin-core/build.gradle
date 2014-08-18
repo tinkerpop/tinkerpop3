@@ -1,0 +1,17 @@
+
+description = 'Gremlin Core: The Primary Components of TinkerPop3'
+dependencies {
+    compile(group: 'commons-configuration', name: 'commons-configuration', version:'1.10') {
+exclude(module: 'commons-logging')
+    }
+    compile group: 'org.yaml', name: 'snakeyaml', version:'1.13'
+    compile group: 'org.javatuples', name: 'javatuples', version:'1.2'
+    compile group: 'com.esotericsoftware.kryo', name: 'kryo', version:'2.23.0'
+    compile group: 'com.carrotsearch', name: 'hppc', version:'0.6.0'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version:'2.3.0'
+    compile(group: 'com.jcabi', name: 'jcabi-manifests', version:'1.0') {
+exclude(module: 'slf4j-api')
+    }
+    compile group: 'org.slf4j', name: 'slf4j-log4j12', version:'1.7.7'
+    compile group: 'org.slf4j', name: 'jcl-over-slf4j', version:'1.7.7'
+}
