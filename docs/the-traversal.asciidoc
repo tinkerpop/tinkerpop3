@@ -235,12 +235,12 @@ GroupBy Step
 As traversers propagate across a graph as defined by a traversal, sideEffect computations are sometimes required. That is, the actually path taken or the current location of a traverser is not the ultimate output of the computation, but some other representation of the traversal. The `groupBy()`-step (*sideEffect*) is one such sideEffect that organizes the objects according to some function of the object. Then, if required, that organization (a list) is reduced. An example is provided below.
 
 [source,groovy]
-gremlin> g.V().groupBy{it.get().value('name')[1]}   // group the vertices by the first letter of their name
-==>[a:[v[1], v[2]], e:[v[6]], i:[v[5]], o:[v[3], v[4]]]
-gremlin> g.V().groupBy{it.get().value('name')[1]}{it.get().value('name')}   // for each vertex in the group, get their name (now the name[1] is apparent)
-==>[a:[marko, vadas], e:[peter], i:[ripple], o:[lop, josh]]
-gremlin> g.V().groupBy{it.get().value('name')[1]}{it.get().value('name')}{it.size()}   // for each grouping, what is it's size?
-==>[a:2, e:1, i:1, o:2]
+gremlin> g.V.groupBy{it.value('name')[0]}   // group the vertices by the first letter of their name
+==>[p:[v[6]], r:[v[5]], v:[v[2]], j:[v[4]], l:[v[3]], m:[v[1]]]
+gremlin> g.V.groupBy{it.value('name')[0]}{it.value('name')}   // for each vertex in the group, get their name (now the name[1] is apparent)
+==>[p:[peter], r:[ripple], v:[vadas], j:[josh], l:[lop], m:[marko]]
+gremlin> g.V.groupBy{it.value('name')[0]}{it.value('name')}{it.size()}   // for each grouping, what is it's size?
+==>[p:1, r:1, v:1, j:1, l:1, m:1]
 
 The three lambda parameters of `groupBy` are discussed below.
 
