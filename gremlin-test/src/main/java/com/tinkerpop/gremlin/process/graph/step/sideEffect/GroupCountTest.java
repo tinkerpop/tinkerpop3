@@ -14,6 +14,8 @@ import java.util.Map;
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.hamcrest.CoreMatchers.is;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -78,11 +80,11 @@ public abstract class GroupCountTest extends AbstractGremlinProcessTest {
             printTraversalForm(traversal);
             final Map<Object, Long> map = traversal.next();
             assertFalse(traversal.hasNext());
-            assertEquals(4,map.size(), 4);
-            assertEquals(4l,map.get("lop").longValue());
-            assertEquals(2l,map.get("ripple").longValue());
-            assertEquals(1l,map.get("josh").longValue());
-            assertEquals(1l,map.get("vadas").longValue());
+            assertThat(map.size(), is(4));
+            assertThat(map.get("lop").longValue(), is(4l));
+            assertThat(map.get("ripple").longValue(), is(2l));
+            assertThat(map.get("josh").longValue(), is(1l));
+            assertThat(map.get("vadas").longValue(), is(1l));
         });
     }
 
