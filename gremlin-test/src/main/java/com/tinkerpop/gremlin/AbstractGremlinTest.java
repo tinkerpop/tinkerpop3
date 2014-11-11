@@ -97,7 +97,7 @@ public abstract class AbstractGremlinTest {
         for (FeatureRequirement fr : featureRequirementSet) {
             try {
                 //System.out.println(String.format("Assume that %s meets Feature Requirement - %s - with %s", fr.featureClass().getSimpleName(), fr.feature(), fr.supported()));
-                assumeThat(String.format("%s does not support all of the features required by this test so it will be ignored: %s.%s=%s",
+                assertThat(String.format("%s does not support all of the features required by this test so it will be ignored: %s.%s=%s",
                                 g.getClass().getSimpleName(), fr.featureClass().getSimpleName(), fr.feature(), fr.supported()),
                         g.features().supports(fr.featureClass(), fr.feature()), is(fr.supported()));
             } catch (NoSuchMethodException nsme) {
