@@ -10,25 +10,30 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 public abstract class StrategyElement implements Element, StrategyWrapped {
     protected final StrategyGraph strategyGraph;
     protected final GraphStrategy strategy;
-    protected final Element baseElement;
+    protected final Element innerElement;
     protected final StrategyContext<StrategyElement> elementStrategyContext;
 
-    protected StrategyElement(final Element baseElement, final StrategyGraph strategyGraph) {
-        if (baseElement instanceof StrategyWrapped) throw new IllegalArgumentException(
-                String.format("The element %s is already StrategyWrapped and must be a base Element", baseElement));
+    protected StrategyElement(final Element innerElement, final StrategyGraph strategyGraph) {
         this.strategyGraph = strategyGraph;
         this.strategy = strategyGraph.getStrategy();
-        this.baseElement = baseElement;
+        this.innerElement = innerElement;
         this.elementStrategyContext = new StrategyContext<>(strategyGraph, this);
     }
 
     public Element getBaseElement() {
-        return this.baseElement;
+        if (this.innerElement instanceof StrategyWrapped)
+            return ((StrategyElement)getInnerElement()).getBaseElement();
+        else
+            return this.innerElement;
+    }
+
+    public Element getInnerElement() {
+        return this.innerElement;
     }
 
     @Override
     public int hashCode() {
-        return this.baseElement.hashCode();
+        return this.innerElement.hashCode();
     }
 
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")

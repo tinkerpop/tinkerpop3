@@ -16,15 +16,13 @@ import java.util.function.Supplier;
  */
 public class StrategyProperty<V> implements Property<V>, StrategyWrapped, WrappedProperty<Property<V>> {
 
-    private final Property<V> baseProperty;
+    private final Property<V> innerProperty;
     private final StrategyContext<StrategyProperty<V>> strategyContext;
     private final StrategyGraph strategyGraph;
     private final GraphStrategy strategy;
 
-    public StrategyProperty(final Property<V> baseProperty, final StrategyGraph strategyGraph) {
-        if (baseProperty instanceof StrategyWrapped) throw new IllegalArgumentException(
-                String.format("The property %s is already StrategyWrapped and must be a base Property", baseProperty));
-        this.baseProperty = baseProperty;
+    public StrategyProperty(final Property<V> innerProperty, final StrategyGraph strategyGraph) {
+        this.innerProperty = innerProperty;
         this.strategyContext = new StrategyContext<>(strategyGraph, this);
         this.strategyGraph = strategyGraph;
         this.strategy = strategyGraph.getStrategy();
@@ -33,45 +31,45 @@ public class StrategyProperty<V> implements Property<V>, StrategyWrapped, Wrappe
     @Override
     public String key() {
         return this.strategyGraph.compose(
-                s -> s.getPropertyKeyStrategy(this.strategyContext, strategy), this.baseProperty::key).get();
+                s -> s.getPropertyKeyStrategy(this.strategyContext, strategy), getInnerProperty()::key).get();
     }
 
     @Override
     public V value() throws NoSuchElementException {
         return this.strategyGraph.compose(
-                s -> s.getPropertyValueStrategy(this.strategyContext, strategy), this.baseProperty::value).get();
+                s -> s.<V>getPropertyValueStrategy(this.strategyContext, strategy), getInnerProperty()::value).get();
     }
 
     @Override
     public boolean isPresent() {
-        return this.baseProperty.isPresent();
+        return getInnerProperty().isPresent();
     }
 
     @Override
     public Element element() {
-        final Element baseElement = this.baseProperty.element();
+        final Element baseElement = getInnerProperty().element();
         return (baseElement instanceof Vertex ? new StrategyVertex((Vertex) baseElement, this.strategyGraph) :
                 new StrategyEdge((Edge) baseElement, this.strategyGraph));
     }
 
     @Override
     public <E extends Throwable> V orElseThrow(final Supplier<? extends E> exceptionSupplier) throws E {
-        return this.baseProperty.orElseThrow(exceptionSupplier);
+        return getInnerProperty().orElseThrow(exceptionSupplier);
     }
 
     @Override
     public V orElseGet(final Supplier<? extends V> valueSupplier) {
-        return this.baseProperty.orElseGet(valueSupplier);
+        return getInnerProperty().orElseGet(valueSupplier);
     }
 
     @Override
     public V orElse(final V otherValue) {
-        return this.baseProperty.orElse(otherValue);
+        return getInnerProperty().orElse(otherValue);
     }
 
     @Override
     public void ifPresent(final Consumer<? super V> consumer) {
-        this.baseProperty.ifPresent(consumer);
+        getInnerProperty().ifPresent(consumer);
     }
 
     @Override
@@ -79,7 +77,7 @@ public class StrategyProperty<V> implements Property<V>, StrategyWrapped, Wrappe
         this.strategyGraph.compose(
                 s -> s.getRemovePropertyStrategy(strategyContext, strategy),
                 () -> {
-                    this.baseProperty.remove();
+                    getInnerProperty().remove();
                     return null;
                 }).get();
     }
@@ -91,6 +89,13 @@ public class StrategyProperty<V> implements Property<V>, StrategyWrapped, Wrappe
 
     @Override
     public Property<V> getBaseProperty() {
-        return this.baseProperty;
+        if (getInnerProperty() instanceof StrategyWrapped)
+            return ((StrategyProperty)getInnerProperty()).getBaseProperty();
+        else
+            return getInnerProperty();
+    }
+
+    public Property<V> getInnerProperty() {
+        return this.innerProperty;
     }
 }
