@@ -110,32 +110,32 @@ public class StrategyGraph implements Graph, Graph.Iterators, StrategyWrapped, W
 
     @Override
     public <T extends Traversal<S, S>, S> T of(final Class<T> traversalClass) {
-        return getBaseGraph().of(traversalClass);  // TODO: wrap the users traversal in StrategyWrappedTraversal
+        return getInnerGraph().of(traversalClass);  // TODO: wrap the users traversal in StrategyWrappedTraversal
     }
 
     @Override
     public GraphComputer compute(final Class... graphComputerClass) {
-        return getBaseGraph().compute(graphComputerClass);
+        return getInnerGraph().compute(graphComputerClass);
     }
 
     @Override
     public Transaction tx() {
-        return getBaseGraph().tx();
+        return getInnerGraph().tx();
     }
 
     @Override
     public Variables variables() {
-        return new StrategyVariables(getBaseGraph().variables(), this);
+        return new StrategyVariables(getInnerGraph().variables(), this);
     }
 
     @Override
     public Configuration configuration() {
-        return getBaseGraph().configuration();
+        return getInnerGraph().configuration();
     }
 
     @Override
     public Features features() {
-        return getBaseGraph().features();
+        return getInnerGraph().features();
     }
 
     @Override
@@ -158,7 +158,7 @@ public class StrategyGraph implements Graph, Graph.Iterators, StrategyWrapped, W
         // compose function doesn't seem to want to work here even though it works with other Supplier<Void>
         // strategy functions. maybe the "throws Exception" is hosing it up.......
         this.strategy.getGraphCloseStrategy(this.graphContext, strategy).apply(FunctionUtils.wrapSupplier(() -> {
-            getBaseGraph().close();
+            getInnerGraph().close();
             return null;
         })).get();
     }

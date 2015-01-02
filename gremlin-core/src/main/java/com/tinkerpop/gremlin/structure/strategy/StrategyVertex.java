@@ -83,7 +83,7 @@ public class StrategyVertex extends StrategyElement implements Vertex, StrategyW
         if (getInnerVertex() instanceof StrategyWrapped)
             return ((StrategyVertex)getInnerVertex()).getBaseVertex();
         else
-            return (Vertex)getInnerVertex();
+            return getInnerVertex();
     }
 
     public Vertex getInnerVertex() {
@@ -92,7 +92,7 @@ public class StrategyVertex extends StrategyElement implements Vertex, StrategyW
 
     @Override
     public Edge addEdge(final String label, final Vertex inVertex, final Object... keyValues) {
-        final Vertex baseInVertex = inVertex; // baseInVertex = (inVertex instanceof StrategyVertex) ? ((StrategyVertex) inVertex).getInnerVertex() : inVertex;  // TODO: why do we need this?
+        final Vertex baseInVertex = (inVertex instanceof StrategyVertex) ? ((StrategyVertex) inVertex).getInnerVertex() : inVertex;
         return new StrategyEdge(this.strategyGraph.compose(
                 s -> s.getAddEdgeStrategy(this.strategyContext, strategy),
                 this.getInnerVertex()::addEdge)

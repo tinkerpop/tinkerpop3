@@ -38,6 +38,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 /**
@@ -191,8 +194,18 @@ public interface Graph extends AutoCloseable {
     public default StrategyGraph strategy(final GraphStrategy... strategies) {
         if (strategies.length == 0)
             throw new IllegalArgumentException("Provide at least one GraphStrategy implementation.");
-        final GraphStrategy graphStrategy = strategies.length == 1 ? strategies[0] : SequenceStrategy.build().sequence(strategies).create();
-        return new StrategyGraph(this, graphStrategy);
+
+        StrategyGraph strategyGraph = new StrategyGraph(this, strategies[strategies.length-1]);
+
+        if (strategies.length == 1)
+            return strategyGraph;
+        else {
+            List<GraphStrategy> remaining = new ArrayList<>(Arrays.asList(strategies));
+            remaining.remove(remaining.size()-1);
+
+            GraphStrategy remainingArr[] = new GraphStrategy[remaining.size()];
+            return strategyGraph.strategy(remaining.toArray(remainingArr));
+        }
     }
 
     /**

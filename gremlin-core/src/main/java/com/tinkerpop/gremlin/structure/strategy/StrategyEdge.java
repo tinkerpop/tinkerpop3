@@ -72,7 +72,7 @@ public class StrategyEdge extends StrategyElement implements Edge, Edge.Iterator
         if (getInnerEdge() instanceof StrategyWrapped)
             return ((StrategyEdge)getInnerEdge()).getBaseEdge();
         else
-            return (Edge)getInnerEdge();
+            return getInnerEdge();
     }
 
     public Edge getInnerEdge() {
