@@ -27,6 +27,70 @@ public interface EdgeManager {
     public default void edgeReadingComplete(final Kryo kryo) {}
     public void writeAllEdges(final Graph g, final Kryo kryo) throws IOException;
 
+    public static class SpillOverEdgeManager implements EdgeManager {
+        private static final double DEFAULT_SPILLOVER = 0.5d;
+        private static final long DEFAULT_UNTIL_SPILLOVER = 10000;
+        private final InMemoryEdgeManager inMemory;
+        private final FileSystemEdgeManager fileSystem;
+        private final double spilloverAt;
+        private long edgeCounter = 0;
+        private final long untilSpillOver;
+        private boolean lastCheck = true;
+
+        public SpillOverEdgeManager() throws IOException {
+            this(System.getProperty("java.io.tmpdir"));
+        }
+
+        public SpillOverEdgeManager(final String workingDirectory) throws IOException {
+            this(workingDirectory, DEFAULT_SPILLOVER, DEFAULT_UNTIL_SPILLOVER);
+        }
+
+        public SpillOverEdgeManager(final String workingDirectory, final double spillOverAt, final long untilSpillOver) throws IOException {
+            this.inMemory = new InMemoryEdgeManager();
+            this.fileSystem = new FileSystemEdgeManager(workingDirectory);
+            this.spilloverAt = spillOverAt;
+            this.untilSpillOver = untilSpillOver;
+        }
+
+        @Override
+        public void edgeReadingComplete(final Kryo kryo) {
+            inMemory.edgeReadingComplete(kryo);
+            fileSystem.edgeReadingComplete(kryo);
+        }
+
+        @Override
+        public void keepReadEdge(final Edge e, final Kryo kryo) {
+            if (useMemoryManager())
+                inMemory.keepReadEdge(e, kryo);
+            else
+                fileSystem.keepReadEdge(e, kryo);
+
+            edgeCounter++;
+        }
+
+        @Override
+        public void writeAllEdges(final Graph g, final Kryo kryo) throws IOException {
+            inMemory.writeAllEdges(g, kryo);
+            fileSystem.writeAllEdges(g, kryo);
+        }
+
+        private boolean useMemoryManager() {
+            if (edgeCounter > untilSpillOver && edgeCounter % 1000 == 0) {
+                final Runtime r = Runtime.getRuntime();
+                final long free = r.freeMemory();
+                final long max = r.maxMemory();
+                final long used = max - free;
+                final double usedPercentage = (double) used / (double) max;
+
+                // if the amount used is less than the spillover then continue to use memory, otherwise use
+                // file system
+                lastCheck = usedPercentage < spilloverAt;
+            }
+
+            return lastCheck;
+        }
+    }
+
     public static class InMemoryEdgeManager implements EdgeManager {
 
         private List<Edge> edges;
@@ -46,6 +110,7 @@ public interface EdgeManager {
 
         @Override
         public void writeAllEdges(final Graph g, final Kryo kryo) throws IOException {
+            System.out.println("EDGES: " + edges.size());
             edges.forEach(e -> {
                 final List<Object> edgeArgs = new ArrayList<>();
                 final DetachedEdge detachedEdge = (DetachedEdge) e;
@@ -64,6 +129,10 @@ public interface EdgeManager {
     public static class FileSystemEdgeManager implements EdgeManager {
         private final File tempFile;
         private final Output output;
+
+        public FileSystemEdgeManager() throws IOException {
+            this(System.getProperty("java.io.tmpdir"));
+        }
 
         public FileSystemEdgeManager(final String workingDirectory) throws IOException {
             final File f = new File(workingDirectory + File.separator + UUID.randomUUID() + ".tmp");
