@@ -47,18 +47,19 @@ public class KryoReader implements GraphReader {
     private final String vertexIdKey;
     private final String edgeIdKey;
 
-    private final File tempFile;
+    //private final File tempFile;
+    private final EdgeManager edgeManager;
 
     final AtomicLong counter = new AtomicLong(0);
 
-    private KryoReader(final File tempFile, final long batchSize,
+    private KryoReader(final EdgeManager edgeManager, final long batchSize,
                        final String vertexIdKey, final String edgeIdKey,
                        final KryoMapper kryoMapper) {
         this.kryo = kryoMapper.createMapper();
         this.headerReader = kryoMapper.getHeaderReader();
         this.vertexIdKey = vertexIdKey;
         this.edgeIdKey = edgeIdKey;
-        this.tempFile = tempFile;
+        this.edgeManager = edgeManager;
         this.batchSize = batchSize;
     }
 
@@ -125,63 +126,53 @@ public class KryoReader implements GraphReader {
             throw new IOException("Could not instantiate BatchGraph wrapper", ex);
         }
 
-        try (final Output output = new Output(new FileOutputStream(tempFile))) {
-            final boolean supportedMemory = input.readBoolean();
-            if (supportedMemory) {
-                // if the graph that serialized the data supported sideEffects then the sideEffects needs to be read
-                // to advance the reader forward.  if the graph being read into doesn't support the sideEffects
-                // then we just setting the data to sideEffects.
-                final Map<String, Object> memMap = (Map<String, Object>) kryo.readObject(input, HashMap.class);
-                if (graphToWriteTo.features().graph().variables().supportsVariables()) {
-                    final Graph.Variables variables = graphToWriteTo.variables();
-                    memMap.forEach(variables::set);
-                }
+        final boolean supportedMemory = input.readBoolean();
+        if (supportedMemory) {
+            // if the graph that serialized the data supported sideEffects then the sideEffects needs to be read
+            // to advance the reader forward.  if the graph being read into doesn't support the sideEffects
+            // then we just setting the data to sideEffects.
+            final Map<String, Object> memMap = (Map<String, Object>) kryo.readObject(input, HashMap.class);
+            if (graphToWriteTo.features().graph().variables().supportsVariables()) {
+                final Graph.Variables variables = graphToWriteTo.variables();
+                memMap.forEach(variables::set);
             }
+        }
 
-            final boolean hasSomeVertices = input.readBoolean();
-            if (hasSomeVertices) {
-                while (!input.eof()) {
-                    final List<Object> vertexArgs = new ArrayList<>();
-                    final DetachedVertex current = (DetachedVertex) kryo.readClassAndObject(input);
-                    appendToArgList(vertexArgs, T.id, current.id());
-                    appendToArgList(vertexArgs, T.label, current.label());
+        final boolean hasSomeVertices = input.readBoolean();
+        if (hasSomeVertices) {
+            while (!input.eof()) {
+                final List<Object> vertexArgs = new ArrayList<>();
+                final DetachedVertex current = (DetachedVertex) kryo.readClassAndObject(input);
+                appendToArgList(vertexArgs, T.id, current.id());
+                appendToArgList(vertexArgs, T.label, current.label());
 
-                    final Vertex v = graph.addVertex(vertexArgs.toArray());
-                    current.iterators().propertyIterator().forEachRemaining(p -> createVertexProperty(graphToWriteTo, v, p, false));
+                final Vertex v = graph.addVertex(vertexArgs.toArray());
+                current.iterators().propertyIterator().forEachRemaining(p -> createVertexProperty(graphToWriteTo, v, p, false));
 
-                    // the gio file should have been written with a direction specified
-                    final boolean hasDirectionSpecified = input.readBoolean();
-                    final Direction directionInStream = kryo.readObject(input, Direction.class);
-                    final Direction directionOfEdgeBatch = kryo.readObject(input, Direction.class);
+                // the gio file should have been written with a direction specified
+                final boolean hasDirectionSpecified = input.readBoolean();
+                final Direction directionInStream = kryo.readObject(input, Direction.class);
+                final Direction directionOfEdgeBatch = kryo.readObject(input, Direction.class);
 
-                    // graph serialization requires that a direction be specified in the stream and that the
-                    // direction of the edges be OUT
-                    if (!hasDirectionSpecified || directionInStream != Direction.OUT || directionOfEdgeBatch != Direction.OUT)
-                        throw new IllegalStateException(String.format("Stream must specify edge direction and that direction must be %s", Direction.OUT));
+                // graph serialization requires that a direction be specified in the stream and that the
+                // direction of the edges be OUT
+                if (!hasDirectionSpecified || directionInStream != Direction.OUT || directionOfEdgeBatch != Direction.OUT)
+                    throw new IllegalStateException(String.format("Stream must specify edge direction and that direction must be %s", Direction.OUT));
 
-                    // if there are edges then read them to end and write to temp, otherwise read what should be
-                    // the vertex terminator
-                    if (!input.readBoolean())
-                        kryo.readClassAndObject(input);
-                    else
-                        readToEndOfEdgesAndWriteToTemp(input, output);
-                }
+                // if there are edges then read them to end and write to temp, otherwise read what should be
+                // the vertex terminator
+                if (!input.readBoolean())
+                    kryo.readClassAndObject(input);
+                else
+                    readToEndOfEdgesAndWriteToTemp(input);
             }
-        } catch (Exception ex) {
-            throw new IOException(ex);
-        }
-        // done writing to temp
+            // done writing to temp
 
-        // start reading in the edges now from the temp file
-        try (final Input edgeInput = new Input(new FileInputStream(tempFile))) {
-            readFromTempEdges(edgeInput, graph);
-            graph.tx().commit();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new IOException(ex);
-        } finally {
-            deleteTempFileSilently();
+            // start reading in the edges now from the temp file
+            readFromTempEdges(graph);
         }
+
+        graph.tx().commit();
     }
 
     private static void createVertexProperty(final Graph graphToWriteTo, final Vertex v, final VertexProperty<Object> p, final boolean hidden) {
@@ -266,10 +257,11 @@ public class KryoReader implements GraphReader {
     /**
      * Reads through the all the edges for a vertex and writes the edges to a temp file which will be read later.
      */
-    private void readToEndOfEdgesAndWriteToTemp(final Input input, final Output output) throws IOException {
+    private void readToEndOfEdgesAndWriteToTemp(final Input input) throws IOException {
         Object next = kryo.readClassAndObject(input);
         while (!next.equals(EdgeTerminator.INSTANCE)) {
-            kryo.writeClassAndObject(output, next);
+            edgeManager.keepReadEdge((Edge) next, kryo);
+            //kryo.writeClassAndObject(output, next);
 
             // next edge or terminator
             next = kryo.readClassAndObject(input);
@@ -278,15 +270,23 @@ public class KryoReader implements GraphReader {
         // this should be the vertex terminator
         kryo.readClassAndObject(input);
 
-        kryo.writeClassAndObject(output, EdgeTerminator.INSTANCE);
-        kryo.writeClassAndObject(output, VertexTerminator.INSTANCE);
+        edgeManager.edgeReadingComplete(kryo);
+
+        //kryo.writeClassAndObject(output, EdgeTerminator.INSTANCE);
+        //kryo.writeClassAndObject(output, VertexTerminator.INSTANCE);
     }
 
 
     /**
      * Read the edges from the temp file and load them to the graph.
      */
-    private void readFromTempEdges(final Input input, final Graph graphToWriteTo) {
+    private void readFromTempEdges(final Graph graphToWriteTo) {
+        try {
+            edgeManager.writeAllEdges(graphToWriteTo, kryo);
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+        /*
         while (!input.eof()) {
             // in this case the outId is the id assigned by the graph
             Object next = kryo.readClassAndObject(input);
@@ -308,8 +308,10 @@ public class KryoReader implements GraphReader {
             // vertex terminator
             kryo.readClassAndObject(input);
         }
+        */
     }
 
+    /*
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void deleteTempFileSilently() {
         try {
@@ -317,6 +319,7 @@ public class KryoReader implements GraphReader {
         } catch (Exception ignored) {
         }
     }
+    */
 
     public static Builder build() {
         return new Builder();
@@ -327,6 +330,7 @@ public class KryoReader implements GraphReader {
         private long batchSize = BatchGraph.DEFAULT_BUFFER_SIZE;
         private String vertexIdKey = T.id.getAccessor();
         private String edgeIdKey = T.id.getAccessor();
+        private EdgeManager edgeManager = new EdgeManager.InMemoryEdgeManager();
 
         /**
          * Always use the most recent kryo version by default
@@ -374,6 +378,11 @@ public class KryoReader implements GraphReader {
             return this;
         }
 
+        public Builder edgeManager(final EdgeManager edgeManager) {
+            this.edgeManager = edgeManager;
+            return this;
+        }
+
         /**
          * The reader requires a working directory to write temp files to.  If this value is not set, it will write
          * the temp file to the local directory.
@@ -388,7 +397,7 @@ public class KryoReader implements GraphReader {
         }
 
         public KryoReader create() {
-            return new KryoReader(tempFile, batchSize, this.vertexIdKey, this.edgeIdKey, this.kryoMapper);
+            return new KryoReader(edgeManager, batchSize, this.vertexIdKey, this.edgeIdKey, this.kryoMapper);
         }
     }
 }
