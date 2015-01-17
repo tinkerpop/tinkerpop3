@@ -18,7 +18,7 @@ import java.util.WeakHashMap;
 public final class TraversalMetrics implements Serializable {
     public static final String PROFILING_ENABLED = "tinkerpop.profiling";
     private static final String[] HEADERS = {"Step", "Count", "Traversers", "Time (ms)", "% Dur"};
-    private static final WeakHashMap<Traversal, Boolean> PROFILING_CACHE = new WeakHashMap<Traversal, Boolean>();
+    private static final WeakHashMap<Traversal, Boolean> PROFILING_CACHE = new WeakHashMap<>();
 
     private long totalStepDuration;
 
@@ -33,7 +33,7 @@ public final class TraversalMetrics implements Serializable {
             return;
         }
 
-        step.getTraversal().sideEffects().getOrCreate(ProfileStep.METRICS_KEY, TraversalMetrics::new).startInternal(step);
+        step.getTraversal().asAdmin().getSideEffects().getOrCreate(ProfileStep.METRICS_KEY, TraversalMetrics::new).startInternal(step);
     }
 
     public static final void stop(final Step<?, ?> step) {
@@ -41,7 +41,7 @@ public final class TraversalMetrics implements Serializable {
             return;
         }
 
-        step.getTraversal().sideEffects().<TraversalMetrics>get(ProfileStep.METRICS_KEY).stopInternal(step);
+        step.getTraversal().asAdmin().getSideEffects().<TraversalMetrics>get(ProfileStep.METRICS_KEY).stopInternal(step);
     }
 
     public static final void finish(final Step<?, ?> step, final Traverser.Admin<?> traverser) {
@@ -49,10 +49,10 @@ public final class TraversalMetrics implements Serializable {
             return;
         }
 
-        step.getTraversal().sideEffects().<TraversalMetrics>get(ProfileStep.METRICS_KEY).finishInternal(step, traverser);
+        step.getTraversal().asAdmin().getSideEffects().<TraversalMetrics>get(ProfileStep.METRICS_KEY).finishInternal(step, traverser);
     }
 
-     private static boolean profiling(final Traversal<?, ?> traversal) {
+    private static boolean profiling(final Traversal<?, ?> traversal) {
         Boolean profiling;
         if ((profiling = PROFILING_CACHE.get(traversal)) != null)
             return profiling;
@@ -62,20 +62,20 @@ public final class TraversalMetrics implements Serializable {
     }
 
     private void startInternal(final Step<?, ?> step) {
-        StepTimer stepMetrics = this.stepTimers.get(step.getLabel());
+        StepTimer stepMetrics = this.stepTimers.get(step.getLabel().orElse(step.getId()));
         if (null == stepMetrics) {
             stepMetrics = new StepTimer(step);
-            this.stepTimers.put(step.getLabel(), stepMetrics);
+            this.stepTimers.put(step.getLabel().orElse(step.getId()), stepMetrics);
         }
         stepMetrics.start();
     }
 
     private void stopInternal(final Step<?, ?> step) {
-        this.stepTimers.get(step.getLabel()).stop();
+        this.stepTimers.get(step.getLabel().orElse(step.getId())).stop();
     }
 
     private void finishInternal(final Step<?, ?> step, final Traverser.Admin<?> traverser) {
-        this.stepTimers.get(step.getLabel()).finish(traverser);
+        this.stepTimers.get(step.getLabel().orElse(step.getId())).finish(traverser);
     }
 
     @Override

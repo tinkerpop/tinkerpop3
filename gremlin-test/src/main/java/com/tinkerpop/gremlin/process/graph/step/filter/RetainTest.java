@@ -16,14 +16,16 @@ import static org.junit.Assert.assertFalse;
  */
 public abstract class RetainTest extends AbstractGremlinProcessTest {
 
-    public abstract Traversal<Vertex, Vertex> get_g_v1_out_retainXg_v2X(final Object v1Id, final Object v2Id);
+    public abstract Traversal<Vertex, Vertex> get_g_VX1X_out_retainXg_v2X(final Object v1Id, final Object v2Id);
 
-    public abstract Traversal<Vertex, Vertex> get_g_v1_out_aggregateXxX_out_retainXxX(final Object v1Id);
+    public abstract Traversal<Vertex, Vertex> get_g_VX1X_out_aggregateXxX_out_retainXxX(final Object v1Id);
+
+    public abstract Traversal<Vertex, String> get_g_VX1X_asXaX_outXcreatedX_inXcreatedX_retainXaX_name(final Object v1Id);
 
     @Test
     @LoadGraphWith(MODERN)
-    public void g_v1_out_retainXg_v2X() {
-        final Traversal<Vertex, Vertex> traversal = get_g_v1_out_retainXg_v2X(convertToVertexId("marko"), convertToVertexId("vadas"));
+    public void g_VX1X_out_retainXg_v2X() {
+        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_out_retainXg_v2X(convertToVertexId("marko"), convertToVertexId("vadas"));
         printTraversalForm(traversal);
         assertEquals("vadas", traversal.next().<String>value("name"));
         assertFalse(traversal.hasNext());
@@ -31,23 +33,37 @@ public abstract class RetainTest extends AbstractGremlinProcessTest {
 
     @Test
     @LoadGraphWith(MODERN)
-    public void g_v1_out_aggregateXxX_out_retainXxX() {
-        final Traversal<Vertex, Vertex> traversal = get_g_v1_out_aggregateXxX_out_retainXxX(convertToVertexId("marko"));
+    public void g_VX1X_out_aggregateXxX_out_retainXxX() {
+        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_out_aggregateXxX_out_retainXxX(convertToVertexId("marko"));
         printTraversalForm(traversal);
         assertEquals("lop", traversal.next().<String>value("name"));
+        assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    @LoadGraphWith(MODERN)
+    public void get_g_VX1X_asXaX_outXcreatedX_inXcreatedX_retainXaX_name() {
+        final Traversal<Vertex, String> traversal = get_g_VX1X_asXaX_outXcreatedX_inXcreatedX_retainXaX_name(convertToVertexId("marko"));
+        printTraversalForm(traversal);
+        assertEquals("marko", traversal.next());
         assertFalse(traversal.hasNext());
     }
 
     public static class StandardTest extends RetainTest {
 
         @Override
-        public Traversal<Vertex, Vertex> get_g_v1_out_retainXg_v2X(final Object v1Id, final Object v2Id) {
+        public Traversal<Vertex, Vertex> get_g_VX1X_out_retainXg_v2X(final Object v1Id, final Object v2Id) {
             return g.V(v1Id).out().retain(g.V(v2Id).next());
         }
 
         @Override
-        public Traversal<Vertex, Vertex> get_g_v1_out_aggregateXxX_out_retainXxX(final Object v1Id) {
+        public Traversal<Vertex, Vertex> get_g_VX1X_out_aggregateXxX_out_retainXxX(final Object v1Id) {
             return g.V(v1Id).out().aggregate("x").out().retain("x");
+        }
+
+        @Override
+        public Traversal<Vertex, String> get_g_VX1X_asXaX_outXcreatedX_inXcreatedX_retainXaX_name(final Object v1Id) {
+            return g.V(v1Id).as("a").out("created").in("created").retain("a").values("name");
         }
     }
 
@@ -57,13 +73,18 @@ public abstract class RetainTest extends AbstractGremlinProcessTest {
         }
 
         @Override
-        public Traversal<Vertex, Vertex> get_g_v1_out_retainXg_v2X(final Object v1Id, final Object v2Id) {
+        public Traversal<Vertex, Vertex> get_g_VX1X_out_retainXg_v2X(final Object v1Id, final Object v2Id) {
             return g.V(v1Id).out().retain(g.V(v2Id).next()).submit(g.compute());
         }
 
         @Override
-        public Traversal<Vertex, Vertex> get_g_v1_out_aggregateXxX_out_retainXxX(final Object v1Id) {
+        public Traversal<Vertex, Vertex> get_g_VX1X_out_aggregateXxX_out_retainXxX(final Object v1Id) {
             return g.V(v1Id).out().aggregate("x").out().retain("x").submit(g.compute());
+        }
+
+        @Override
+        public Traversal<Vertex, String> get_g_VX1X_asXaX_outXcreatedX_inXcreatedX_retainXaX_name(final Object v1Id) {
+            return g.V(v1Id).as("a").out("created").in("created").retain("a").<String>values("name").submit(g.compute());
         }
     }
 }

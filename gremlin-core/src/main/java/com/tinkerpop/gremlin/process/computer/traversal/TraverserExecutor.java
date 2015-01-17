@@ -30,8 +30,8 @@ public final class TraverserExecutor {
         // gather incoming traversers into a traverser set and gain the 'weighted-set' optimization
         messenger.receiveMessages(MessageScope.Global.instance()).forEach(traverserSet -> {
             traverserSet.forEach(traverser -> {
+                traverser.setSideEffects(traversal.asAdmin().getSideEffects());
                 traverser.attach(vertex);
-                traverser.setSideEffects(traversal.sideEffects());
                 aliveTraversers.add((Traverser.Admin) traverser);
             });
         });
@@ -57,7 +57,7 @@ public final class TraverserExecutor {
             // process local traversers and if alive, repeat, else halt.
             aliveTraversers.clear();
             toProcessTraversers.forEach(start -> {
-                final Step<?, ?> step = TraversalHelper.getStep(start.getFuture(), traversal);
+                final Step<?, ?> step = TraversalHelper.getStepByIdRecurssively(start.getFutureId(), traversal).get();
                 step.addStart((Traverser.Admin) start);
                 step.forEachRemaining(end -> {
                     if (end.asAdmin().isHalted()) {

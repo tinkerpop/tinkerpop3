@@ -1,19 +1,12 @@
 package com.tinkerpop.gremlin.groovy.engine;
 
+import com.tinkerpop.gremlin.TestHelper;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngineTest;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.io.graphson.GraphSONResourceAccess;
-import com.tinkerpop.gremlin.structure.io.kryo.KryoResourceAccess;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.kohsuke.groovy.sandbox.GroovyInterceptor;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,11 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
@@ -47,7 +36,7 @@ public class GremlinExecutorTest {
         try {
             final List<String> groovyScriptResources = Arrays.asList("GremlinExecutorInit.groovy");
             for (final String fileName : groovyScriptResources) {
-                PATHS.put(fileName, generateTempFile(GremlinExecutorTest.class, fileName));
+                PATHS.put(fileName, TestHelper.generateTempFileFromResource(GremlinExecutorTest.class, fileName, "").getAbsolutePath());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -294,7 +283,7 @@ public class GremlinExecutorTest {
     @Test
     public void shouldSecureAll() throws Exception {
         GroovyInterceptor.getApplicableInterceptors().forEach(GroovyInterceptor::unregister);
-        final Map<String,Object> config = new HashMap<>();
+        final Map<String, Object> config = new HashMap<>();
         config.put("sandbox", GremlinGroovyScriptEngineTest.DenyAll.class.getName());
         final GremlinExecutor gremlinExecutor = GremlinExecutor.build()
                 .addEngineSettings("gremlin-groovy",
@@ -316,7 +305,7 @@ public class GremlinExecutorTest {
     @Test
     public void shouldSecureSome() throws Exception {
         GroovyInterceptor.getApplicableInterceptors().forEach(GroovyInterceptor::unregister);
-        final Map<String,Object> config = new HashMap<>();
+        final Map<String, Object> config = new HashMap<>();
         config.put("sandbox", GremlinGroovyScriptEngineTest.AllowSome.class.getName());
         final GremlinExecutor gremlinExecutor = GremlinExecutor.build()
                 .addEngineSettings("gremlin-groovy",
@@ -357,18 +346,5 @@ public class GremlinExecutorTest {
         gremlinExecutor.getScriptEngines().reset();
 
         assertEquals(2, gremlinExecutor.eval("add(1,1)").get());
-    }
-
-    public static String generateTempFile(final Class resourceClass, final String fileName) throws IOException {
-        final File temp = File.createTempFile(fileName, ".groovy");
-        final FileOutputStream outputStream = new FileOutputStream(temp);
-        int data;
-        final InputStream inputStream = resourceClass.getResourceAsStream(fileName);
-        while ((data = inputStream.read()) != -1) {
-            outputStream.write(data);
-        }
-        outputStream.close();
-        inputStream.close();
-        return temp.getPath();
     }
 }

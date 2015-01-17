@@ -1,9 +1,8 @@
 package com.tinkerpop.gremlin.neo4j.structure;
 
-import com.google.common.collect.ImmutableSet;
-import com.tinkerpop.gremlin.neo4j.process.graph.Neo4jTraversal;
+import com.tinkerpop.gremlin.neo4j.process.graph.Neo4jGraphTraversal;
 import com.tinkerpop.gremlin.neo4j.process.graph.Neo4jVertexTraversal;
-import com.tinkerpop.gremlin.neo4j.process.graph.util.Neo4jGraphTraversal;
+import com.tinkerpop.gremlin.neo4j.process.graph.util.DefaultNeo4jGraphTraversal;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.structure.Direction;
@@ -25,8 +24,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 
 /**
@@ -174,8 +175,8 @@ public class Neo4jVertex extends Neo4jElement implements Vertex, Vertex.Iterator
     }
 
     @Override
-    public Neo4jTraversal<Vertex, Vertex> start() {
-        final Neo4jTraversal<Vertex, Vertex> traversal = new Neo4jGraphTraversal<>(this.graph);
+    public Neo4jGraphTraversal<Vertex, Vertex> start() {
+        final Neo4jGraphTraversal<Vertex, Vertex> traversal = new DefaultNeo4jGraphTraversal<>(this.getClass(), this.graph);
         return traversal.addStep(new StartStep<>(traversal, this));
     }
 
@@ -193,7 +194,12 @@ public class Neo4jVertex extends Neo4jElement implements Vertex, Vertex.Iterator
     /////////////// Neo4jVertex Specific Methods for Multi-Label Support ///////////////
     public Set<String> labels() {
         this.graph.tx().readWrite();
-        return ImmutableSet.<String>builder().addAll(IteratorUtils.map(this.getBaseVertex().getLabels().iterator(), Label::name)).build();
+        final Set<String> labels = new TreeSet<>();
+        final Iterator<String> itty = IteratorUtils.map(this.getBaseVertex().getLabels().iterator(), Label::name);
+        while (itty.hasNext()) {
+            labels.add(itty.next());
+        }
+        return Collections.unmodifiableSet(labels);
     }
 
     public void addLabel(final String label) {

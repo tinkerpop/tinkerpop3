@@ -1,7 +1,6 @@
 package com.tinkerpop.gremlin.structure.util.detached;
 
 import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -10,7 +9,6 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import com.tinkerpop.gremlin.util.StreamFactory;
 import org.javatuples.Pair;
 
 import java.util.Collections;
@@ -73,9 +71,10 @@ public class DetachedEdge extends DetachedElement<Edge> implements Edge, Edge.It
 
     @Override
     public Edge attach(final Vertex hostVertex) {
-        return StreamFactory.stream(hostVertex.iterators().edgeIterator(Direction.OUT, this.label))
-                .filter(edge -> edge.equals(this))
-                .findAny().orElseThrow(() -> new IllegalStateException("The detached edge could not be be found incident to the provided vertex: " + this));
+        final Iterator<Edge> edges = IteratorUtils.filter(hostVertex.iterators().edgeIterator(Direction.OUT, this.label), edge -> edge.equals(this));
+        if (!edges.hasNext())
+            throw new IllegalStateException("The detached edge could not be be found incident to the provided vertex: " + this);
+        return edges.next();
     }
 
     @Override
@@ -121,11 +120,6 @@ public class DetachedEdge extends DetachedElement<Edge> implements Edge, Edge.It
     @Override
     public Edge.Iterators iterators() {
         return this;
-    }
-
-    @Override
-    public GraphTraversal<Edge, Edge> start() {
-        throw new UnsupportedOperationException("Detached edges cannot be traversed: " + this);
     }
 
     @Override

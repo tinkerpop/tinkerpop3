@@ -4,6 +4,8 @@ import com.tinkerpop.gremlin.process.Traversal
 import com.tinkerpop.gremlin.process.graph.step.ComputerTestHelper
 import com.tinkerpop.gremlin.structure.Vertex
 
+import static com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal.Tokens.__
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -26,8 +28,13 @@ public abstract class GroovyCountTest {
         }
 
         @Override
-        public Traversal<Vertex, Long> get_g_V_asXaX_out_jumpXa_loops_lt_3X_count() {
-            g.V().as('a').out().jump('a') { it.loops() < 3 }.count()
+        public Traversal<Vertex, Long> get_g_V_repeatXoutX_timesX3X_count() {
+            g.V().repeat(__.out).times(3).count()
+        }
+
+        @Override
+        public Traversal<Vertex, Long> get_g_V_repeatXoutX_timesX8X_count() {
+            g.V.repeat(__.out).times(8).count()
         }
 
         @Override
@@ -53,8 +60,13 @@ public abstract class GroovyCountTest {
         }
 
         @Override
-        public Traversal<Vertex, Long> get_g_V_asXaX_out_jumpXa_loops_lt_3X_count() {
-            ComputerTestHelper.compute("g.V().as('a').out().jump('a'){it.loops() < 3}.count()", g);
+        public Traversal<Vertex, Long> get_g_V_repeatXoutX_timesX3X_count() {
+            ComputerTestHelper.compute("g.V().repeat(__.out).times(3).count()", g);
+        }
+
+        @Override
+        public Traversal<Vertex, Long> get_g_V_repeatXoutX_timesX8X_count() {
+            ComputerTestHelper.compute("g.V.repeat(__.out).times(8).count()", g);
         }
 
         @Override

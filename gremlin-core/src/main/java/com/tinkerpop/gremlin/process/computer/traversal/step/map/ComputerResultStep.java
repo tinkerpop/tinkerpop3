@@ -8,7 +8,8 @@ import com.tinkerpop.gremlin.process.computer.Memory;
 import com.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
 import com.tinkerpop.gremlin.process.computer.traversal.step.sideEffect.mapreduce.TraverserMapReduce;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.SideEffectCapStep;
-import com.tinkerpop.gremlin.process.traverser.SimpleTraverser;
+import com.tinkerpop.gremlin.process.traverser.B_O_PA_S_SE_SL_Traverser;
+import com.tinkerpop.gremlin.process.traverser.TraverserRequirement;
 import com.tinkerpop.gremlin.process.util.AbstractStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -16,6 +17,7 @@ import com.tinkerpop.gremlin.structure.util.detached.Attachable;
 import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -33,12 +35,12 @@ public final class ComputerResultStep<S> extends AbstractStep<S, S> {
         this.graph = result.graph();
         this.memory = result.memory();
         this.attachElements = attachElements;
-        this.memory.keys().forEach(key -> traversal.sideEffects().set(key, this.memory.get(key)));
+        this.memory.keys().forEach(key -> traversal.asAdmin().getSideEffects().set(key, this.memory.get(key)));
         this.computerTraversal = traversalVertexProgram.getTraversal();
 
         final Step endStep = TraversalHelper.getEnd(this.computerTraversal);
         this.traversers = endStep instanceof SideEffectCapStep ?
-                IteratorUtils.of(new SimpleTraverser<>((S) this.memory.get(((SideEffectCapStep) endStep).getSideEffectKey()), this)) :
+                IteratorUtils.of(new B_O_PA_S_SE_SL_Traverser<>((S) this.memory.get(((SideEffectCapStep) endStep).getSideEffectKey()), this)) :  // TODO: use a generator
                 (Iterator<Traverser.Admin<S>>) this.memory.get(TraverserMapReduce.TRAVERSERS);
 
     }
@@ -51,7 +53,13 @@ public final class ComputerResultStep<S> extends AbstractStep<S, S> {
         return traverser;
     }
 
+    @Override
     public String toString() {
         return TraversalHelper.makeStepString(this, this.computerTraversal);
+    }
+
+    @Override
+    public Set<TraverserRequirement> getRequirements() {
+        return TraversalHelper.getRequirements(this.computerTraversal);
     }
 }

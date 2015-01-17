@@ -1,10 +1,11 @@
 package com.tinkerpop.gremlin.process;
 
 import com.tinkerpop.gremlin.AbstractGremlinSuite;
+import com.tinkerpop.gremlin.process.graph.step.branch.BranchTest;
 import com.tinkerpop.gremlin.process.graph.step.branch.ChooseTest;
-import com.tinkerpop.gremlin.process.graph.step.branch.JumpTest;
+import com.tinkerpop.gremlin.process.graph.step.branch.RepeatTest;
 import com.tinkerpop.gremlin.process.graph.step.branch.UnionTest;
-import com.tinkerpop.gremlin.process.graph.step.branch.UntilTest;
+import com.tinkerpop.gremlin.process.graph.step.filter.BetweenTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.CoinTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.CyclicPathTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.DedupTest;
@@ -12,7 +13,6 @@ import com.tinkerpop.gremlin.process.graph.step.filter.ExceptTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.FilterTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.HasNotTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.HasTest;
-import com.tinkerpop.gremlin.process.graph.step.filter.IntervalTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.RangeTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.RetainTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.SampleTest;
@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The ProcessStandardSuite is a custom JUnit test runner that executes the Gremlin Test Suite over a Graph
+ * The ProcessStandardSuite is a mapper JUnit test runner that executes the Gremlin Test Suite over a Graph
  * implementation.  This specialized test suite and runner is for use by Gremlin implementers to test their
  * Graph implementations.  The StructureStandardSuite ensures consistency and validity of the implementations that they
  * test.
@@ -82,19 +82,19 @@ public class ProcessStandardSuite extends AbstractGremlinSuite {
      */
     private static final Class<?>[] allTests = new Class<?>[]{
             // branch
+            BranchTest.StandardTest.class,
             ChooseTest.StandardTest.class,
-            JumpTest.StandardTest.class,
+            RepeatTest.StandardTest.class,
             UnionTest.StandardTest.class,
-            UntilTest.StandardTest.class,
 
             // filter
+            BetweenTest.StandardTest.class,
             CyclicPathTest.StandardTest.class,
             DedupTest.StandardTest.class,
             ExceptTest.StandardTest.class,
             FilterTest.StandardTest.class,
             HasNotTest.StandardTest.class,
             HasTest.StandardTest.class,
-            IntervalTest.StandardTest.class,
             CoinTest.StandardTest.class,
             RangeTest.StandardTest.class,
             RetainTest.StandardTest.class,
@@ -136,7 +136,7 @@ public class ProcessStandardSuite extends AbstractGremlinSuite {
             TraversalSideEffectsTest.StandardTest.class,
 
             // compliance
-            TraversalCoverageTest.class,
+            GraphTraversalCoverageTest.class,
             CoreTraversalTest.class,
             PathTest.class,
 
@@ -149,19 +149,19 @@ public class ProcessStandardSuite extends AbstractGremlinSuite {
      */
     protected static Class<?>[] testsToEnforce = new Class<?>[]{
             // branch
+            BranchTest.class,
             ChooseTest.class,
-            JumpTest.class,
+            RepeatTest.class,
             UnionTest.class,
-            UntilTest.class,
 
             // filter
+            BetweenTest.class,
             CyclicPathTest.class,
             DedupTest.class,
             ExceptTest.class,
             FilterTest.class,
             HasNotTest.class,
             HasTest.class,
-            IntervalTest.class,
             CoinTest.class,
             RangeTest.class,
             RetainTest.class,
@@ -202,7 +202,7 @@ public class ProcessStandardSuite extends AbstractGremlinSuite {
             TraversalSideEffectsTest.class,
 
             // compliance
-            TraversalCoverageTest.class,
+            GraphTraversalCoverageTest.class,
             CoreTraversalTest.class,
             PathTest.class,
 

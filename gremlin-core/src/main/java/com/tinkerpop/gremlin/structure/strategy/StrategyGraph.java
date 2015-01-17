@@ -7,8 +7,6 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Transaction;
 import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.strategy.process.graph.StrategyGraphTraversal;
-import com.tinkerpop.gremlin.structure.strategy.process.graph.StrategyTraversal;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import com.tinkerpop.gremlin.util.function.FunctionUtils;
@@ -91,21 +89,33 @@ public class StrategyGraph implements Graph, Graph.Iterators, StrategyWrapped, W
 
     @Override
     public GraphTraversal<Vertex, Vertex> V(final Object... vertexIds) {
-        return new StrategyGraphTraversal<>(Vertex.class, this.compose(
+        return this.compose(s -> s.getGraphVStrategy(this.graphContext, this.strategy), getInnerGraph()::V).apply(vertexIds).map(vertex -> new StrategyVertex(vertex.get(), this));
+       /* final GraphTraversal<Vertex, Vertex> traversal = new DefaultGraphTraversal<>(this.getClass());
+        return traversal.asAdmin().addStep(new StrategyGraphStep<>(traversal, this, Vertex.class, this.compose(
                 s -> s.getGraphVStrategy(this.graphContext, strategy),
+<<<<<<< HEAD
                 getInnerGraph()::V).apply(vertexIds), this);
+=======
+                this.baseGraph::V).apply(vertexIds))); */
+//>>>>>>> upstream/master
     }
 
     @Override
     public GraphTraversal<Edge, Edge> E(final Object... edgeIds) {
-        return new StrategyGraphTraversal<>(Edge.class, this.compose(
+        return this.compose(s -> s.getGraphEStrategy(this.graphContext, this.strategy), getInnerGraph()::E).apply(edgeIds).map(edge -> new StrategyEdge(edge.get(), this));
+        /*final GraphTraversal<Edge, Edge> traversal = new DefaultGraphTraversal<>(this.getClass());
+        return traversal.asAdmin().addStep(new StrategyGraphStep<>(traversal, this, Edge.class, this.compose(
                 s -> s.getGraphEStrategy(this.graphContext, strategy),
+<<<<<<< HEAD
                 getInnerGraph()::E).apply(edgeIds), this);
     }
 
     @Override
     public <S> GraphTraversal<S, S> of() {
         return new StrategyTraversal<>(this);
+=======
+                this.baseGraph::E).apply(edgeIds)));*/
+//>>>>>>> upstream/master
     }
 
     @Override
@@ -173,4 +183,6 @@ public class StrategyGraph implements Graph, Graph.Iterators, StrategyWrapped, W
             return new IllegalStateException("StrategyGraph is in safe mode - its elements cannot be unwrapped.");
         }
     }
+
+
 }

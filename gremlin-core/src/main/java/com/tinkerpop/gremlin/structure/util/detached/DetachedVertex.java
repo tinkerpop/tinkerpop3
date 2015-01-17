@@ -55,9 +55,10 @@ public class DetachedVertex extends DetachedElement<Vertex> implements Vertex, V
         super(id, label);
         if (!properties.isEmpty()) {
             this.properties = new HashMap<>();
-            properties.entrySet().stream().forEach(entry -> this.properties.put(entry.getKey(), ((List<Map<String, Object>>) entry.getValue()).stream()
-                    .map(m -> (Property) new DetachedVertexProperty<>(m.get(ID), (String) m.get(LABEL), entry.getKey(), m.get(VALUE), (Map<String, Object>) m.getOrDefault(PROPERTIES, new HashMap<>()), this))
-                    .collect(Collectors.toList())));
+            properties.entrySet().stream().forEach(
+                    entry -> this.properties.put(entry.getKey(), ((List<Map<String, Object>>) entry.getValue()).stream()
+                            .map(m -> (Property) new DetachedVertexProperty<>(m.get(ID), entry.getKey(), m.get(VALUE), (Map<String, Object>) m.getOrDefault(PROPERTIES, new HashMap<>()), this))
+                            .collect(Collectors.toList())));
         }
     }
 
@@ -86,11 +87,6 @@ public class DetachedVertex extends DetachedElement<Vertex> implements Vertex, V
     @Override
     public String toString() {
         return StringFactory.vertexString(this);
-    }
-
-    @Override
-    public GraphTraversal<Vertex, Vertex> start() {
-        throw new UnsupportedOperationException("Detached vertices cannot be traversed: " + this);
     }
 
     @Override

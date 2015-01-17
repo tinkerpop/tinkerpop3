@@ -1,8 +1,8 @@
 package com.tinkerpop.gremlin.neo4j.structure;
 
 import com.tinkerpop.gremlin.neo4j.process.graph.Neo4jEdgeTraversal;
-import com.tinkerpop.gremlin.neo4j.process.graph.Neo4jTraversal;
-import com.tinkerpop.gremlin.neo4j.process.graph.util.Neo4jGraphTraversal;
+import com.tinkerpop.gremlin.neo4j.process.graph.Neo4jGraphTraversal;
+import com.tinkerpop.gremlin.neo4j.process.graph.util.DefaultNeo4jGraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
@@ -23,13 +23,13 @@ import java.util.Iterator;
 public class Neo4jEdge extends Neo4jElement implements Edge, Edge.Iterators, WrappedEdge<Relationship>, Neo4jEdgeTraversal {
 
     public Neo4jEdge(final Relationship relationship, final Neo4jGraph graph) {
-        super(relationship,graph);
+        super(relationship, graph);
     }
 
     @Override
-    public Neo4jTraversal<Edge, Edge> start() {
-        final Neo4jTraversal<Edge, Edge> traversal = new Neo4jGraphTraversal<>(this.graph);
-        return (Neo4jTraversal) traversal.addStep(new StartStep<>(traversal, this));
+    public Neo4jGraphTraversal<Edge, Edge> start() {
+        final Neo4jGraphTraversal<Edge, Edge> traversal = new DefaultNeo4jGraphTraversal<>(this.getClass(), this.graph);
+        return traversal.addStep(new StartStep<>(traversal, this));
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal.Tokens.__;
 import static org.junit.Assert.*;
 
 /**
@@ -15,16 +16,14 @@ import static org.junit.Assert.*;
  */
 public abstract class SimplePathTest extends AbstractGremlinProcessTest {
 
-    public abstract Traversal<Vertex, Vertex> get_g_v1_outXcreatedX_inXcreatedX_simplePath(final Object v1Id);
+    public abstract Traversal<Vertex, Vertex> get_g_VX1X_outXcreatedX_inXcreatedX_simplePath(final Object v1Id);
 
-    public abstract Traversal<Vertex, Path> get_g_V_asXxX_both_simplePath_jumpXx_loops_lt_3X_path();
-
-    public abstract Traversal<Vertex, Path> get_g_V_asXxX_both_simplePath_jumpXx_3X_path();
+    public abstract Traversal<Vertex, Path> get_g_V_repeatXboth_simplePathX_timesX3X_path();
 
     @Test
     @LoadGraphWith(MODERN)
-    public void g_v1_outXcreatedX_inXcreatedX_simplePath() {
-        final Traversal<Vertex, Vertex> traversal = get_g_v1_outXcreatedX_inXcreatedX_simplePath(convertToVertexId("marko"));
+    public void g_VX1X_outXcreatedX_inXcreatedX_simplePath() {
+        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_outXcreatedX_inXcreatedX_simplePath(convertToVertexId("marko"));
         printTraversalForm(traversal);
         int counter = 0;
         while (traversal.hasNext()) {
@@ -38,22 +37,8 @@ public abstract class SimplePathTest extends AbstractGremlinProcessTest {
 
     @Test
     @LoadGraphWith(MODERN)
-    public void g_V_asXxX_both_simplePath_jumpXx_loops_lt_3X_path() {
-        final Traversal<Vertex, Path> traversal = get_g_V_asXxX_both_simplePath_jumpXx_loops_lt_3X_path();
-        printTraversalForm(traversal);
-        int counter = 0;
-        while (traversal.hasNext()) {
-            counter++;
-            assertTrue(traversal.next().isSimple());
-        }
-        assertEquals(18, counter);
-        assertFalse(traversal.hasNext());
-    }
-
-    @Test
-    @LoadGraphWith(MODERN)
-    public void g_V_asXxX_both_simplePath_jumpXx_3X_path() {
-        final Traversal<Vertex, Path> traversal = get_g_V_asXxX_both_simplePath_jumpXx_3X_path();
+    public void g_V_repeatXboth_simplePathX_timesX3X_path() {
+        final Traversal<Vertex, Path> traversal = get_g_V_repeatXboth_simplePathX_timesX3X_path();
         printTraversalForm(traversal);
         int counter = 0;
         while (traversal.hasNext()) {
@@ -67,18 +52,14 @@ public abstract class SimplePathTest extends AbstractGremlinProcessTest {
     public static class StandardTest extends SimplePathTest {
 
         @Override
-        public Traversal<Vertex, Vertex> get_g_v1_outXcreatedX_inXcreatedX_simplePath(final Object v1Id) {
+        public Traversal<Vertex, Vertex> get_g_VX1X_outXcreatedX_inXcreatedX_simplePath(final Object v1Id) {
             return g.V(v1Id).out("created").in("created").simplePath();
         }
 
-        @Override
-        public Traversal<Vertex, Path> get_g_V_asXxX_both_simplePath_jumpXx_loops_lt_3X_path() {
-            return g.V().as("x").both().simplePath().jump("x", t -> t.loops() < 3).path();
-        }
 
         @Override
-        public Traversal<Vertex, Path> get_g_V_asXxX_both_simplePath_jumpXx_3X_path() {
-            return g.V().as("x").both().simplePath().jump("x", 3).path();
+        public Traversal<Vertex, Path> get_g_V_repeatXboth_simplePathX_timesX3X_path() {
+            return g.V().repeat(__.both().simplePath()).times(3).path();
         }
     }
 
@@ -88,18 +69,13 @@ public abstract class SimplePathTest extends AbstractGremlinProcessTest {
         }
 
         @Override
-        public Traversal<Vertex, Vertex> get_g_v1_outXcreatedX_inXcreatedX_simplePath(final Object v1Id) {
+        public Traversal<Vertex, Vertex> get_g_VX1X_outXcreatedX_inXcreatedX_simplePath(final Object v1Id) {
             return g.V(v1Id).out("created").in("created").simplePath().submit(g.compute());
         }
 
         @Override
-        public Traversal<Vertex, Path> get_g_V_asXxX_both_simplePath_jumpXx_loops_lt_3X_path() {
-            return g.V().as("x").both().simplePath().jump("x", t -> t.loops() < 3).path().submit(g.compute());
-        }
-
-        @Override
-        public Traversal<Vertex, Path> get_g_V_asXxX_both_simplePath_jumpXx_3X_path() {
-            return g.V().as("x").both().simplePath().jump("x", 3).path().submit(g.compute());
+        public Traversal<Vertex, Path> get_g_V_repeatXboth_simplePathX_timesX3X_path() {
+            return g.V().repeat(__.both().simplePath()).times(3).path().submit(g.compute());
         }
     }
 }

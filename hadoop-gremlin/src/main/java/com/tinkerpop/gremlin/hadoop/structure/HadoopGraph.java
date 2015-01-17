@@ -2,12 +2,13 @@ package com.tinkerpop.gremlin.hadoop.structure;
 
 import com.tinkerpop.gremlin.hadoop.Constants;
 import com.tinkerpop.gremlin.hadoop.process.computer.giraph.GiraphGraphComputer;
+import com.tinkerpop.gremlin.hadoop.process.graph.strategy.HadoopElementStepStrategy;
 import com.tinkerpop.gremlin.hadoop.structure.hdfs.HadoopEdgeIterator;
 import com.tinkerpop.gremlin.hadoop.structure.hdfs.HadoopVertexIterator;
 import com.tinkerpop.gremlin.hadoop.structure.util.ConfUtil;
+import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Transaction;
@@ -64,7 +65,11 @@ import java.util.Optional;
         reason = "Hadoop-Gremlin is OLAP-oriented and for OLTP operations, linear-scan joins are required. This particular tests takes many minutes to execute.")
 @Graph.OptOut(
         test = "com.tinkerpop.gremlin.process.graph.step.sideEffect.CountTest$StandardTest",
-        method = "g_V_asXaX_out_jumpXa_loops_lt_3X_count",
+        method = "g_V_repeatXoutX_timesX3X_count",
+        reason = "Hadoop-Gremlin is OLAP-oriented and for OLTP operations, linear-scan joins are required. This particular tests takes many minutes to execute.")
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.process.graph.step.sideEffect.CountTest$StandardTest",
+        method = "g_V_repeatXoutX_timesX8X_count",
         reason = "Hadoop-Gremlin is OLAP-oriented and for OLTP operations, linear-scan joins are required. This particular tests takes many minutes to execute.")
 @Graph.OptOut(
         test = "com.tinkerpop.gremlin.process.graph.step.sideEffect.GroovyCountTest$StandardTest",
@@ -72,7 +77,11 @@ import java.util.Optional;
         reason = "Hadoop-Gremlin is OLAP-oriented and for OLTP operations, linear-scan joins are required. This particular tests takes many minutes to execute.")
 @Graph.OptOut(
         test = "com.tinkerpop.gremlin.process.graph.step.sideEffect.GroovyCountTest$StandardTest",
-        method = "g_V_asXaX_out_jumpXa_loops_lt_3X_count",
+        method = "g_V_repeatXoutX_timesX3X_count",
+        reason = "Hadoop-Gremlin is OLAP-oriented and for OLTP operations, linear-scan joins are required. This particular tests takes many minutes to execute.")
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.process.graph.step.sideEffect.GroovyCountTest$StandardTest",
+        method = "g_V_repeatXoutX_timesX8X_count",
         reason = "Hadoop-Gremlin is OLAP-oriented and for OLTP operations, linear-scan joins are required. This particular tests takes many minutes to execute.")
 @Graph.OptOut(
         test = "com.tinkerpop.gremlin.process.computer.GroovyGraphComputerTest$ComputerTest",
@@ -87,6 +96,15 @@ import java.util.Optional;
         method = "shouldHaveConsistentMemoryVertexPropertiesAndExceptions",
         reason = "Hadoop does a hard kill on failure and stops threads which stops test cases. Exception handling semantics are correct though.")
 public class HadoopGraph implements Graph, Graph.Iterators {
+
+    static {
+        try {
+            TraversalStrategies.GlobalCache.registerStrategies(HadoopVertex.class, TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(HadoopElementStepStrategy.instance()));
+            TraversalStrategies.GlobalCache.registerStrategies(HadoopEdge.class, TraversalStrategies.GlobalCache.getStrategies(Edge.class).clone().addStrategies(HadoopElementStepStrategy.instance()));
+        } catch (final CloneNotSupportedException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
 
     public static final Logger LOGGER = LoggerFactory.getLogger(HadoopGraph.class);
 
@@ -106,11 +124,6 @@ public class HadoopGraph implements Graph, Graph.Iterators {
 
     public static HadoopGraph open(final Configuration configuration) {
         return new HadoopGraph(Optional.ofNullable(configuration).orElse(EMPTY_CONFIGURATION));
-    }
-
-    @Override
-    public <S> GraphTraversal<S, S> of() {
-        return GraphTraversal.of();
     }
 
     @Override

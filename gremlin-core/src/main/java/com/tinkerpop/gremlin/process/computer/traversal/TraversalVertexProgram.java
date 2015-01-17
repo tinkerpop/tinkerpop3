@@ -1,6 +1,8 @@
 package com.tinkerpop.gremlin.process.computer.traversal;
 
+import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.TraversalSideEffects;
 import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.process.Traverser;
 import com.tinkerpop.gremlin.process.TraverserGenerator;
@@ -16,7 +18,6 @@ import com.tinkerpop.gremlin.process.computer.util.LambdaHolder;
 import com.tinkerpop.gremlin.process.graph.marker.MapReducer;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.SideEffectCapStep;
-import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.process.util.TraverserSet;
 import com.tinkerpop.gremlin.structure.Direction;
@@ -55,7 +56,7 @@ public final class TraversalVertexProgram implements VertexProgram<TraverserSet<
 
     // TODO: if not an adjacent traversal, use Local message scope -- a dual messaging system.
     private static final Set<MessageScope> MESSAGE_SCOPES = new HashSet<>(Arrays.asList(MessageScope.Global.instance()));
-    private static final Set<String> ELEMENT_COMPUTE_KEYS = new HashSet<>(Arrays.asList(HALTED_TRAVERSERS, Traversal.SideEffects.SIDE_EFFECTS));
+    private static final Set<String> ELEMENT_COMPUTE_KEYS = new HashSet<>(Arrays.asList(HALTED_TRAVERSERS, TraversalSideEffects.SIDE_EFFECTS));
     private static final Set<String> MEMORY_COMPUTE_KEYS = new HashSet<>(Arrays.asList(VOTE_TO_HALT));
 
     private LambdaHolder<Supplier<Traversal>> traversalSupplier;
@@ -88,10 +89,9 @@ public final class TraversalVertexProgram implements VertexProgram<TraverserSet<
             throw new IllegalArgumentException("The configuration does not have a traversal supplier");
         }
         this.traversal = this.traversalSupplier.get().get();
-        this.traversal.asAdmin().getSteps().stream().filter(step -> step instanceof MapReducer).forEach(step -> {
-            final MapReduce mapReduce = ((MapReducer) step).getMapReduce();
-            this.mapReducers.add(mapReduce);
-        });
+        for (final Step<?, ?> mapReducer : TraversalHelper.getStepsOfAssignableClassRecurssively(MapReducer.class, this.traversal)) {
+            this.mapReducers.add(((MapReducer) mapReducer).getMapReduce());
+        }
         if (!(TraversalHelper.getEnd(this.traversal) instanceof SideEffectCapStep))
             this.mapReducers.add(new TraverserMapReduce(TraversalHelper.getEnd(this.traversal)));
     }
@@ -114,7 +114,7 @@ public final class TraversalVertexProgram implements VertexProgram<TraverserSet<
 
     @Override
     public void execute(final Vertex vertex, final Messenger<TraverserSet<?>> messenger, final Memory memory) {
-        this.traversal.sideEffects().setLocalVertex(vertex);
+        this.traversal.asAdmin().getSideEffects().setLocalVertex(vertex);
         if (memory.isInitialIteration()) {
             final TraverserSet<Object> haltedTraversers = new TraverserSet<>();
             vertex.property(HALTED_TRAVERSERS, haltedTraversers);
@@ -123,15 +123,15 @@ public final class TraversalVertexProgram implements VertexProgram<TraverserSet<
                 throw new UnsupportedOperationException("TraversalVertexProgram currently only supports GraphStep starts on vertices or edges");
 
             final GraphStep<Element> startStep = (GraphStep<Element>) this.traversal.asAdmin().getSteps().get(0);   // TODO: make this generic to Traversal
-            final TraverserGenerator traverserGenerator = TraversalStrategies.GlobalCache.getStrategies(this.traversal.getClass()).getTraverserGenerator(this.traversal);
-            final String future = startStep.getNextStep() instanceof EmptyStep ? Traverser.Admin.HALT : startStep.getNextStep().getLabel();
+            final TraverserGenerator traverserGenerator = TraversalStrategies.GlobalCache.getStrategies(Graph.class).getTraverserGenerator(this.traversal);
+            final String future = startStep.getNextStep().getId();
             boolean voteToHalt = true;
             final Iterator<? extends Element> starts = startStep.returnsVertices() ? IteratorUtils.of(vertex) : vertex.iterators().edgeIterator(Direction.OUT);
             while (starts.hasNext()) {
                 final Element start = starts.next();
                 if (ElementHelper.idExists(start.id(), startStep.getIds())) {
                     final Traverser.Admin<Element> traverser = traverserGenerator.generate(start, startStep, 1l);
-                    traverser.setFuture(future);
+                    traverser.setFutureId(future);
                     traverser.detach();
                     if (traverser.isHalted())
                         haltedTraversers.add((Traverser.Admin) traverser);

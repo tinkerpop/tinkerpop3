@@ -4,17 +4,17 @@ import com.tinkerpop.gremlin.AbstractGremlinSuite;
 import com.tinkerpop.gremlin.process.computer.GraphComputerTest;
 import com.tinkerpop.gremlin.process.computer.ranking.PageRankVertexProgramTest;
 import com.tinkerpop.gremlin.process.computer.util.ComputerDataStrategyTest;
+import com.tinkerpop.gremlin.process.graph.step.branch.BranchTest;
 import com.tinkerpop.gremlin.process.graph.step.branch.ChooseTest;
-import com.tinkerpop.gremlin.process.graph.step.branch.JumpTest;
+import com.tinkerpop.gremlin.process.graph.step.branch.RepeatTest;
 import com.tinkerpop.gremlin.process.graph.step.branch.UnionTest;
-import com.tinkerpop.gremlin.process.graph.step.branch.UntilTest;
+import com.tinkerpop.gremlin.process.graph.step.filter.BetweenTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.CoinTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.CyclicPathTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.ExceptTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.FilterTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.HasNotTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.HasTest;
-import com.tinkerpop.gremlin.process.graph.step.filter.IntervalTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.RetainTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.SampleTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.SimplePathTest;
@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The ProcessComputerStandardSuite is a custom JUnit test runner that executes the Gremlin Test Suite over a Graph
+ * The ProcessComputerStandardSuite is a mapper JUnit test runner that executes the Gremlin Test Suite over a Graph
  * implementation.  This specialized test suite and runner is for use by Gremlin implementers to test their
  * Graph implementations.  The StructureStandardSuite ensures consistency and validity of the implementations that they
  * test.
@@ -83,19 +83,19 @@ public class ProcessComputerSuite extends AbstractGremlinSuite {
             GraphComputerTest.ComputerTest.class,   // todo: not sure this should be here as it forces retest of GraphComputer without an "implementation"
 
             // branch
+            BranchTest.ComputerTest.class,
             ChooseTest.ComputerTest.class,
-            JumpTest.ComputerTest.class,
+            RepeatTest.ComputerTest.class,
             UnionTest.ComputerTest.class,
-            UntilTest.ComputerTest.class,
 
             // filter
+            BetweenTest.ComputerTest.class,
             CyclicPathTest.ComputerTest.class,
             // TODO: DedupTest.ComputerTest.class
             ExceptTest.ComputerTest.class,
             FilterTest.ComputerTest.class,
             HasNotTest.ComputerTest.class,
             HasTest.ComputerTest.class,
-            IntervalTest.ComputerTest.class,
             CoinTest.ComputerTest.class,
             // TODO: RangeTest.ComputerTest.class,
             RetainTest.ComputerTest.class,
@@ -138,7 +138,7 @@ public class ProcessComputerSuite extends AbstractGremlinSuite {
             PageRankVertexProgramTest.class,
 
             // compliance
-            TraversalCoverageTest.class,
+            GraphTraversalCoverageTest.class,
 
             // strategy
             ComputerDataStrategyTest.class
@@ -152,19 +152,19 @@ public class ProcessComputerSuite extends AbstractGremlinSuite {
             GraphComputerTest.class,
 
             // branch
+            BranchTest.class,
             ChooseTest.class,
-            JumpTest.class,
+            RepeatTest.class,
             UnionTest.class,
-            UntilTest.class,
 
             // filter
+            BetweenTest.class,
             CyclicPathTest.class,
             // DedupTest.class,
             ExceptTest.class,
             FilterTest.class,
             HasNotTest.class,
             HasTest.class,
-            IntervalTest.class,
             CoinTest.class,
             // RangeTest.class,
             RetainTest.class,
@@ -210,7 +210,7 @@ public class ProcessComputerSuite extends AbstractGremlinSuite {
             PageRankVertexProgramTest.class,
 
             // compliance
-            TraversalCoverageTest.class,
+            GraphTraversalCoverageTest.class,
 
             // strategy
             ComputerDataStrategyTest.class
