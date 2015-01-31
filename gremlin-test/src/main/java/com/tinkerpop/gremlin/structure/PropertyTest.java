@@ -23,6 +23,8 @@ import java.util.Map;
 import static com.tinkerpop.gremlin.structure.Graph.Features.PropertyFeatures.FEATURE_PROPERTIES;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
@@ -95,6 +97,16 @@ public class PropertyTest {
             } catch (Exception ex) {
                 fail("Removing an edge property that was already removed should not throw an exception");
             }
+        }
+
+        @Test
+        @FeatureRequirementSet(FeatureRequirementSet.Package.SIMPLE)
+        @FeatureRequirement(featureClass = Graph.Features.PropertyFeatures.class, feature = PropertyFeatures.FEATURE_PROPERTIES)
+        public void shouldAllowForConversionOfPropertyValueToOptional() {
+            final Vertex v = g.addVertex("name", "marko");
+            tryCommit(g);
+            assertTrue(v.property("name").optional().isPresent());
+            assertFalse(v.property("notpresent").optional().isPresent());
         }
     }
 

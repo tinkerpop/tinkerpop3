@@ -3,6 +3,7 @@ package com.tinkerpop.gremlin.structure;
 import com.tinkerpop.gremlin.structure.util.empty.EmptyProperty;
 
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -85,6 +86,11 @@ public interface Property<V> {
         if (this.isPresent()) return this.value();
         else
             throw exceptionSupplier.get();
+    }
+
+    @Graph.Helper
+    public default Optional<V> optional() {
+        return this.isPresent() ? Optional.of(this.value()) : Optional.empty();
     }
 
     /**
