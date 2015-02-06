@@ -28,21 +28,19 @@ import java.util.function.UnaryOperator;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class StrategyGraph implements Graph, Graph.Iterators, StrategyWrapped, WrappedGraph<Graph> {
-    private final Graph baseGraph;
+    private final Graph innerGraph;
     private final GraphStrategy strategy;
     private final StrategyContext<StrategyGraph> graphContext;
 
-    public StrategyGraph(final Graph baseGraph) {
-        this(baseGraph, IdentityStrategy.instance());
+    public StrategyGraph(final Graph innerGraph) {
+        this(innerGraph, IdentityStrategy.instance());
     }
 
-    public StrategyGraph(final Graph baseGraph, final GraphStrategy strategy) {
-        if (baseGraph instanceof StrategyWrapped) throw new IllegalArgumentException(
-                String.format("The graph %s is already StrategyWrapped and must be a base Graph", baseGraph));
+    public StrategyGraph(final Graph innerGraph, final GraphStrategy strategy) {
         if (null == strategy) throw new IllegalArgumentException("Strategy cannot be null");
 
         this.strategy = strategy;
-        this.baseGraph = baseGraph;
+        this.innerGraph = innerGraph;
         this.graphContext = new StrategyContext<>(this, this);
     }
 
@@ -51,8 +49,16 @@ public class StrategyGraph implements Graph, Graph.Iterators, StrategyWrapped, W
      */
     @Override
     public Graph getBaseGraph() {
-        return this.baseGraph;
+        if (getInnerGraph() instanceof StrategyWrapped)
+            return ((StrategyGraph)getInnerGraph()).getBaseGraph();
+        else
+            return getInnerGraph();
     }
+
+    public Graph getInnerGraph() {
+        return this.innerGraph;
+    }
+
 
     /**
      * Gets the {@link com.tinkerpop.gremlin.structure.strategy.GraphStrategy} for the {@link com.tinkerpop.gremlin.structure.Graph}.
@@ -77,56 +83,69 @@ public class StrategyGraph implements Graph, Graph.Iterators, StrategyWrapped, W
     public Vertex addVertex(final Object... keyValues) {
         final Optional<Vertex> v = Optional.ofNullable(compose(
                 s -> s.getAddVertexStrategy(this.graphContext, strategy),
-                this.baseGraph::addVertex).apply(keyValues));
+                getInnerGraph()::addVertex).apply(keyValues));
         return v.isPresent() ? new StrategyVertex(v.get(), this) : null;
     }
 
     @Override
     public GraphTraversal<Vertex, Vertex> V(final Object... vertexIds) {
-        return this.compose(s -> s.getGraphVStrategy(this.graphContext, this.strategy), this.baseGraph::V).apply(vertexIds).map(vertex -> new StrategyVertex(vertex.get(), this));
+        return this.compose(s -> s.getGraphVStrategy(this.graphContext, this.strategy), getInnerGraph()::V).apply(vertexIds).map(vertex -> new StrategyVertex(vertex.get(), this));
        /* final GraphTraversal<Vertex, Vertex> traversal = new DefaultGraphTraversal<>(this.getClass());
         return traversal.asAdmin().addStep(new StrategyGraphStep<>(traversal, this, Vertex.class, this.compose(
                 s -> s.getGraphVStrategy(this.graphContext, strategy),
+<<<<<<< HEAD
+                getInnerGraph()::V).apply(vertexIds), this);
+=======
                 this.baseGraph::V).apply(vertexIds))); */
+//>>>>>>> upstream/master
     }
 
     @Override
     public GraphTraversal<Edge, Edge> E(final Object... edgeIds) {
-        return this.compose(s -> s.getGraphEStrategy(this.graphContext, this.strategy), this.baseGraph::E).apply(edgeIds).map(edge -> new StrategyEdge(edge.get(), this));
+        return this.compose(s -> s.getGraphEStrategy(this.graphContext, this.strategy), getInnerGraph()::E).apply(edgeIds).map(edge -> new StrategyEdge(edge.get(), this));
         /*final GraphTraversal<Edge, Edge> traversal = new DefaultGraphTraversal<>(this.getClass());
         return traversal.asAdmin().addStep(new StrategyGraphStep<>(traversal, this, Edge.class, this.compose(
                 s -> s.getGraphEStrategy(this.graphContext, strategy),
+<<<<<<< HEAD
+                getInnerGraph()::E).apply(edgeIds), this);
+    }
+
+    @Override
+    public <S> GraphTraversal<S, S> of() {
+        return new StrategyTraversal<>(this);
+=======
                 this.baseGraph::E).apply(edgeIds)));*/
+//>>>>>>> upstream/master
     }
 
     @Override
     public <T extends Traversal<S, S>, S> T of(final Class<T> traversalClass) {
-        return this.baseGraph.of(traversalClass);  // TODO: wrap the users traversal in StrategyWrappedTraversal
+        return getInnerGraph().of(traversalClass);  // TODO: wrap the users traversal in StrategyWrappedTraversal
     }
 
     @Override
     public GraphComputer compute(final Class... graphComputerClass) {
-        return this.baseGraph.compute(graphComputerClass);
+        return getInnerGraph().compute(graphComputerClass);
     }
 
     @Override
     public Transaction tx() {
-        return this.baseGraph.tx();
+        return getInnerGraph().tx();
     }
 
     @Override
     public Variables variables() {
-        return new StrategyVariables(this.baseGraph.variables(), this);
+        return new StrategyVariables(getInnerGraph().variables(), this);
     }
 
     @Override
     public Configuration configuration() {
-        return this.baseGraph.configuration();
+        return getInnerGraph().configuration();
     }
 
     @Override
     public Features features() {
-        return this.baseGraph.features();
+        return getInnerGraph().features();
     }
 
     @Override
@@ -136,12 +155,12 @@ public class StrategyGraph implements Graph, Graph.Iterators, StrategyWrapped, W
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
-        return new StrategyVertex.StrategyVertexIterator(compose(s -> s.getGraphIteratorsVertexIteratorStrategy(this.graphContext, strategy), this.baseGraph.iterators()::vertexIterator).apply(vertexIds), this);
+        return new StrategyVertex.StrategyVertexIterator(compose(s -> s.getGraphIteratorsVertexIteratorStrategy(this.graphContext, strategy), getInnerGraph().iterators()::vertexIterator).apply(vertexIds), this);
     }
 
     @Override
     public Iterator<Edge> edgeIterator(final Object... edgeIds) {
-        return new StrategyEdge.StrategyEdgeIterator(compose(s -> s.getGraphIteratorsEdgeIteratorStrategy(this.graphContext, strategy), this.baseGraph.iterators()::edgeIterator).apply(edgeIds), this);
+        return new StrategyEdge.StrategyEdgeIterator(compose(s -> s.getGraphIteratorsEdgeIteratorStrategy(this.graphContext, strategy), getInnerGraph().iterators()::edgeIterator).apply(edgeIds), this);
     }
 
     @Override
@@ -149,14 +168,14 @@ public class StrategyGraph implements Graph, Graph.Iterators, StrategyWrapped, W
         // compose function doesn't seem to want to work here even though it works with other Supplier<Void>
         // strategy functions. maybe the "throws Exception" is hosing it up.......
         this.strategy.getGraphCloseStrategy(this.graphContext, strategy).apply(FunctionUtils.wrapSupplier(() -> {
-            baseGraph.close();
+            getInnerGraph().close();
             return null;
         })).get();
     }
 
     @Override
     public String toString() {
-        return StringFactory.graphStrategyString(strategy, this.baseGraph);
+        return StringFactory.graphStrategyString(strategy, getInnerGraph());
     }
 
     public static class Exceptions {
