@@ -70,7 +70,7 @@ public class TinkerGraph implements Graph, Graph.Iterators {
      * An empty private constructor that initializes {@link TinkerGraph} with no {@link com.tinkerpop.gremlin.structure.strategy.GraphStrategy}.  Primarily
      * used for purposes of serialization issues.
      */
-    private TinkerGraph() {
+    protected TinkerGraph() {
     }
 
     /**
