@@ -2,10 +2,10 @@ TinkerPop3
 ----------
 TinkerPop is now an link:https://www.apache.org/[Apache Software Foundation project].
 
-  * Apache TinkerPop Homepage: link:http://tinkerpop.incubator.apache.org[http://tinkerpop.incubator.apache.org]
-  * Apache TinkerPop Repository: link:https://github.com/apache/incubator-tinkerpop[https://github.com/apache/incubator-tinkerpop]
+  * Apache TinkerPop Homepage: link:http://tinkerpop.apache.org[http://tinkerpop.apache.org]
+  * Apache TinkerPop Repository: link:https://github.com/apache/tinkerpop[https://github.com/apache/tinkerpop]
 
-image:https://raw.githubusercontent.com/apache/incubator-tinkerpop/master/docs/static/images/tinkerpop3-splash.png[TinkerPop3, link="http://tinkerpop.incubator.apache.org"]
+image:https://raw.githubusercontent.com/apache/tinkerpop/master/docs/static/images/tinkerpop3-splash.png[TinkerPop3, link="http://tinkerpop.incubator.apache.org"]
 
 
 
